@@ -2,6 +2,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 import app.models.gwas  # Mandatory: Import model agar SQLAlchemy mengenali semua tabel GWAS
+from app.routers import upload  # Import router upload baru
 
 # Perintah ini yang membuat semua tabel di PostgreSQL secara otomatis jika belum ada
 Base.metadata.create_all(bind=engine)
@@ -16,6 +17,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(upload.router)
 
 @app.get("/health", tags=["System"])
 def health():
