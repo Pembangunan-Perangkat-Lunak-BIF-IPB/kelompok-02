@@ -1,0 +1,20 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+venv/
+env/
+.env
+
+# Node / Frontend
+node_modules/
+frontend/dist/
+frontend/build/
+
+# Bioinformatika & Scratch Storage
+*.bed
+*.bim
+*.fam
+*.eigenvec
+*.eigenval
+*.tsv
+storage/
