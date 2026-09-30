@@ -2,8 +2,8 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.upload_service import save_uploaded_file
 
 router = APIRouter(
-    prefix="/api/v1/upload",
-    tags=["Upload"]
+    prefix="/upload",  
+    tags=["GWAS Pipeline"]
 )
 
 @router.post("")
