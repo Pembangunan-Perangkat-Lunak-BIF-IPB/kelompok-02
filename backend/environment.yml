@@ -1,0 +1,16 @@
+# Environment conda tim JIWAAS-KU. Isinya HANYA alat non-Python dan Python itu sendiri.
+# Paket Python (FastAPI, dll.) tetap dikelola di backend/requirements.txt.
+#
+# Buat  : cd backend && conda env create -f environment.yml
+#         conda activate jiwasku && pip install -r requirements.txt
+# Update: conda env update -f environment.yml --prune
+name: jiwasku
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - python=3.13
+  - pip
+  - plink2
+  - bcftools      # memotong VCF menjadi dataset uji kecil
