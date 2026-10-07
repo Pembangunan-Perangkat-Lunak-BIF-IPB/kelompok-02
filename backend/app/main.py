@@ -2,7 +2,10 @@
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 import app.models.gwas  # Mandatory: Import model agar SQLAlchemy mengenali semua tabel GWAS
-from app.routers import upload
+import app.models.analysis
+from app.models.analysis import Analysis, AnalysisStage
+from app.routers import pipeline
+
 
 # Membuang/membuat skema tabel awal
 Base.metadata.create_all(bind=engine)
@@ -19,7 +22,7 @@ app.add_middleware(
 )
 
 # Registrasi Router Upload
-app.include_router(upload.router)
+app.include_router(pipeline.router)
 
 @app.get("/health", tags=["System"])
 def health():
