@@ -49,7 +49,7 @@ def run_sample_matching_and_qc(
     max_geno = round(1.0 - call_rate, 4)
 
     cmd = [
-        ".\\plink2.exe",
+        "./plink2.exe",
         "--vcf", vcf_path,
         "--keep", keep_samples_path,
         "--double-id",  # Menyamakan format FID dan IID dengan VCF
