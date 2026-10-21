@@ -1,26 +1,21 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine, Base
-import app.models.gwas  # Mandatory: Import model agar SQLAlchemy mengenali semua tabel GWAS
-from app.routers import upload
 
-# Membuang/membuat skema tabel awal
-Base.metadata.create_all(bind=engine)
+# Impor router pipeline/upload milikmu
+from app.routers import pipeline  # sesuaikan jika nama filenya upload.py atau pipeline.py
 
-app = FastAPI(title="Jiwasku GWAS Pipeline API")
+app = FastAPI(
+    title="Jiwasku GWAS Pipeline API",
+    description="API Back-End untuk Pipeline Genome-Wide Association Study (GWAS) Terintegrasi",
+    version="0.1.0",
+)
 
-# Konfigurasi CORS agar frontend (React/Vite) bisa berkomunikasi dengan backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Registrasi Router Upload
-app.include_router(upload.router)
-
-@app.get("/health", tags=["System"])
-def health():
-    return {"status": "ok"}
+app.include_router(pipeline.router)
