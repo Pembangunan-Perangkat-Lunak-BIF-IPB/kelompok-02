@@ -1,25 +1,18 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
-# Load file .env lokal
 load_dotenv()
 
-# Ambil DATABASE_URL dari .env
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql+psycopg://postgres:postgres@localhost:5432/jiwasku"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/jiwasku")
 
-# Inisialisasi Engine SQLAlchemy
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base Class untuk Model
 Base = declarative_base()
 
-# Dependency DB untuk router
 def get_db():
     db = SessionLocal()
     try:
