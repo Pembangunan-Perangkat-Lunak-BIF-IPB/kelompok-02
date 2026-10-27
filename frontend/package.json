@@ -10,15 +10,21 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
+    "@splinetool/react-spline": "^4.1.0",
+    "@splinetool/runtime": "^2.0.111",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-query": "^5.104.4",
+    "@types/three": "^0.186.0",
     "axios": "^1.20.0",
     "lucide-react": "^1.61.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router": "^8.4.0",
     "react-router-dom": "^7.18.4",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

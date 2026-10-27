@@ -6,3 +6,18 @@
   --color-accent: #F59E0B;
   --font-sans: "Inter", system-ui, sans-serif;
 }
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-btn {
+  background-size: 200% 200%;
+  transition: all 0.3s ease;
+}
+
+.animate-gradient-btn:hover {
+  animation: gradientMove 2.5s ease infinite;
+}

@@ -21,9 +21,10 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
   isActive
 }) => {
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm mb-4">
+    <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm mb-4 animate-fade-in-up">
       <div className="flex items-center gap-2 mb-3">
-        <span className="w-5 h-5 rounded-full bg-cyan-500 text-white font-bold text-[10px] flex items-center justify-center">
+        {/* Nomor Step dengan Gradasi Cyan-Sky */}
+        <span className="w-6 h-6 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-teal-400 text-slate-950 font-bold text-[10px] flex items-center justify-center shadow-md animate-gradient-btn">
           2
         </span>
         <h2 className="text-sm font-bold text-slate-900">Konfigurasi Parameter GWAS & Kontrol Kualitas</h2>
@@ -37,7 +38,8 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
                 MAF Threshold <HelpCircle className="w-3 h-3 text-slate-400" />
               </label>
-              <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-2 py-0.5 rounded-full">
+              {/* Badge Nilai Gradasi Cyan */}
+              <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs animate-gradient-btn">
                 {maf.toFixed(2)}
               </span>
             </div>
@@ -46,11 +48,11 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
             <input 
               type="range" 
               min="0.00" 
-              max="0.20" 
+              max="0.05" 
               step="0.01" 
               value={maf}
               onChange={(e) => onMafChange(parseFloat(e.target.value))}
-              className="w-full mt-3 accent-amber-500 cursor-pointer"
+              className="w-full mt-3 accent-amber-600 cursor-pointer"
             />
             <input 
               type="number" 
@@ -69,7 +71,8 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
                 Call Rate <HelpCircle className="w-3 h-3 text-slate-400" />
               </label>
-              <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-2 py-0.5 rounded-full">
+              {/* Badge Nilai Gradasi Cyan */}
+              <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs animate-gradient-btn">
                 {callRate}%
               </span>
             </div>
@@ -80,7 +83,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
                 type="number" 
                 value={callRate}
                 onChange={(e) => onCallRateChange(parseInt(e.target.value) || 0)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-800 font-medium focus:outline-none focus:border-cyan-500 pr-6"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-800 font-medium focus:outline-none focus:border-amber-500 pr-6"
               />
               <span className="absolute right-2.5 top-1.5 text-[11px] text-slate-400 font-bold">%</span>
             </div>
@@ -95,7 +98,8 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
                 Jumlah PC (PCA) <HelpCircle className="w-3 h-3 text-slate-400" />
               </label>
-              <span className="bg-amber-100 text-amber-700 text-[9px] font-bold px-2 py-0.5 rounded-full">
+              {/* Badge Nilai Gradasi Cyan */}
+              <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-full shadow-xs animate-gradient-btn">
                 {pca} PCs
               </span>
             </div>
@@ -107,8 +111,10 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
                   key={val}
                   type="button"
                   onClick={() => onPcaChange(val)}
-                  className={`py-1 text-[10px] font-bold rounded-md border transition ${
-                    pca === val ? 'bg-amber-400 text-slate-900 border-amber-400 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                  className={`py-1 text-[10px] font-bold rounded-md border transition cursor-pointer ${
+                    pca === val 
+                      ? 'bg-gradient-to-r from-amber-500 via-cyan-200 to-teal-400 text-slate-950 border-transparent shadow-md animate-gradient-btn' 
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
                   {val} PCs
@@ -127,18 +133,20 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
         </div>
       </div>
 
-      {/* QC Status Checkbar */}
-      <div className={`mt-3 p-2.5 rounded-xl border flex flex-wrap items-center gap-4 transition-all ${
-        isActive ? 'bg-cyan-500 text-white border-cyan-500' : 'bg-slate-50 text-slate-600 border-slate-200'
+      {/* QC Status Checkbar dengan Gradasi Aktif */}
+      <div className={`mt-3 p-3 rounded-xl border flex flex-wrap items-center gap-4 transition-all shadow-sm ${
+        isActive 
+          ? 'bg-gradient-to-r from-amber-600 via-white-700 to-teal-600 text-white border-transparent animate-gradient-btn' 
+          : 'bg-slate-50 text-slate-600 border-slate-200'
       }`}>
         <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-          <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${isActive ? 'bg-amber-400 text-slate-900' : 'bg-slate-400 text-white'}`}>
+          <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${isActive ? 'bg-amber-400 text-slate-950 shadow-xs' : 'bg-slate-400 text-white'}`}>
             <Check className="w-2.5 h-2.5 stroke-[3]" />
           </div>
           <span>Hardy-Weinberg Equilibrium (HWE &gt; 1e-6)</span>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-          <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${isActive ? 'bg-amber-400 text-slate-900' : 'bg-slate-400 text-white'}`}>
+          <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${isActive ? 'bg-amber-400 text-slate-950 shadow-xs' : 'bg-slate-400 text-white'}`}>
             <Check className="w-2.5 h-2.5 stroke-[3]" />
           </div>
           <span>Linear Mixed Model (LMM)</span>

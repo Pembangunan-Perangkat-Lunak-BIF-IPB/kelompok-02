@@ -16,7 +16,7 @@ const StepCard: React.FC<StepCardProps> = ({ stepNumber, title, description, ico
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             {stepNumber}
           </span>
-          <div className="w-8 h-8 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600">
+          <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-cyan-600">
             {icon}
           </div>
         </div>
@@ -31,7 +31,7 @@ export const PipelineSteps: React.FC = () => {
   return (
     <section className="py-16 max-w-5xl mx-auto px-6 text-center">
       {/* Category Badge */}
-      <div className="inline-flex items-center gap-1.5 bg-cyan-400 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3">
+      <div className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3">
         <span>⚡ Alur Kerja Terstandarisasi</span>
       </div>
 

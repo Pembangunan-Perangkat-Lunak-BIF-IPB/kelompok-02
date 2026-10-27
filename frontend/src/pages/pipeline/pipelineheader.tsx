@@ -8,7 +8,7 @@ export const PipelineHeader: React.FC<PipelineHeaderProps> = ({ currentStep }) =
   return (
     <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm mb-4">
       <div className="flex items-center gap-2 mb-1">
-        <span className="bg-cyan-500 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+        <span className="bg-amber-500 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
           ⚡ Pipeline GWAS
         </span>
       </div>
@@ -16,7 +16,7 @@ export const PipelineHeader: React.FC<PipelineHeaderProps> = ({ currentStep }) =
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-cyan-500 text-white font-bold text-xs flex items-center justify-center shrink-0">
+          <div className="w-7 h-7 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">
             1
           </div>
           <div>
@@ -27,7 +27,7 @@ export const PipelineHeader: React.FC<PipelineHeaderProps> = ({ currentStep }) =
 
         <div className="flex items-center gap-2.5">
           <div className={`w-7 h-7 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${
-            currentStep >= 2 ? 'bg-cyan-500 text-white' : 'bg-cyan-100 text-cyan-600'
+            currentStep >= 2 ? 'bg-amber-200 text-white' : 'bg-amber-100 text-white-600'
           }`}>
             2
           </div>

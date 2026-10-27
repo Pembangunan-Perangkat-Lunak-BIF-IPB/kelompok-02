@@ -3,7 +3,7 @@ import { Search, Fingerprint, RotateCcw } from 'lucide-react'
 
 export const SearchHistory: React.FC = () => {
   return (
-    <section className="relative z-20 -mt-12 max-w-3xl mx-auto px-4">
+    <section className="relative z-20 -mt-12 max-w-3xl mx-auto px-4 animate-pop-in" style={{ animationDelay: '0.4s' }}>
       <div className="bg-gradient-to-b from-cyan-50/90 to-blue-50/90 backdrop-blur-md border border-cyan-100 rounded-3xl p-8 shadow-xl text-center">
         {/* Top Icon */}
         <div className="w-10 h-10 bg-amber-100/80 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-600">
@@ -25,8 +25,12 @@ export const SearchHistory: React.FC = () => {
             placeholder="Masukkan kode unik..."
             className="w-full bg-transparent border-none text-xs text-slate-800 placeholder-slate-400 focus:outline-none px-3"
           />
-          <button className="bg-amber-400 hover:bg-amber-500 text-slate-900 text-xs font-bold px-6 py-2.5 rounded-full flex items-center gap-1.5 transition cursor-pointer">
-            <Search className="w-3.5 h-3.5" />
+          {/* Tombol Cari dengan Gradasi Cyan-Amber & Animasi Berjalan */}
+          <button 
+            type="button"
+            className="bg-gradient-to-r from-amber-400 via-sky-500 to-cyan-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shadow-md animate-gradient-btn cursor-pointer"
+          >
+            <Search className="w-4 h-4" />
             <span>Cari</span>
           </button>
         </div>
