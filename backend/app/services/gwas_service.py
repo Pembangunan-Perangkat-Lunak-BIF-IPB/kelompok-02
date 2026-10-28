@@ -52,6 +52,7 @@ def execute_gwas_pipeline(
         update_stage_progress(result_id, "visualisasi", AnalysisStatus.SUCCESS, int(time.time() - t0), "Visualisasi selesai", 100, db)
 
     except Exception as e:
+        db.rollback()
         analysis = db.query(Analysis).filter_by(result_id=result_id).first()
         if analysis:
             analysis.status = AnalysisStatus.FAILED

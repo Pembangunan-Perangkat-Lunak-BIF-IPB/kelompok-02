@@ -51,8 +51,8 @@ def run_sample_matching(vcf_path: str, csv_path: str, job_dir: str) -> tuple[str
             f.write(f"{s_id}\t{s_id}\n")
 
     # 5. Filter & Simpan `matched_phenotype.csv`
-    matched_df = pheno_df[pheno_df["Sample_ID"].astype(str).isin(matched_ids)]
     matched_csv_path = os.path.join(job_dir, "matched_phenotype.csv")
+    matched_df = pheno_df[pheno_df["Sample_ID"].astype(str).isin(matched_ids)]
     matched_df.to_csv(matched_csv_path, index=False)
 
     return keep_samples_path, matched_csv_path
