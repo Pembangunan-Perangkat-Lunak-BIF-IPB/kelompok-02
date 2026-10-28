@@ -4,10 +4,6 @@ import pandas as pd
 from fastapi import HTTPException
 
 def run_sample_matching(vcf_path: str, csv_path: str, job_dir: str) -> tuple[str, str]:
-    """
-    Task 2: Mengekstrak Sample ID dari VCF dan CSV, mencocokkan irisan ID,
-    serta menghasilkan file perantara `keep_samples.txt` dan `matched_phenotype.csv`.
-    """
     # 1. Baca Header VCF untuk Ekstraksi Sample ID
     is_gz = vcf_path.endswith(".vcf.gz")
     open_func = gzip.open if is_gz else open
@@ -30,9 +26,19 @@ def run_sample_matching(vcf_path: str, csv_path: str, job_dir: str) -> tuple[str
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Gagal membaca berkas CSV fenotipe: {str(e)}")
         
+    pheno_df.columns = [str(c).lstrip("#").strip() for c in pheno_df.columns]
+    if "Sample_ID" not in pheno_df.columns and "IID" in pheno_df.columns:
+        pheno_df = pheno_df.rename(columns={"IID": "Sample_ID"})
+    # FID/IID dibuang supaya tidak terbaca PLINK sebagai kolom fenotipe
+    # (association_service akan membuat #FID dan IID sendiri dari Sample_ID)
+    pheno_df = pheno_df.drop(columns=["FID", "IID"], errors="ignore")
+
     if "Sample_ID" not in pheno_df.columns:
-        raise HTTPException(status_code=400, detail="Berkas CSV fenotipe wajib memiliki kolom 'Sample_ID'")
-        
+        raise HTTPException(
+            status_code=400,
+            detail="Berkas CSV fenotipe wajib memiliki kolom 'Sample_ID' atau 'IID'"
+        )
+    
     csv_samples = pheno_df["Sample_ID"].astype(str).tolist()
 
     # 3. Cari Irisan (Matching) ID Sampel

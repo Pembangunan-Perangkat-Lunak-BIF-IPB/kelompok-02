@@ -1,10 +1,10 @@
 import os
 import uuid
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.models.analysis import Analysis, AnalysisStatus
 from app.services.gwas_service import execute_gwas_pipeline
 from app.services.upload_service import validate_and_save_files
@@ -13,8 +13,28 @@ from app.services.status_service import init_analysis_job
 
 router = APIRouter(prefix="/api/v1", tags=["GWAS Pipeline"])
 
+def _run_pipeline_background(result_id, vcf_path, csv_path, maf, call_rate, num_pcs):
+    # Session milik request sudah ditutup setelah response terkirim, jadi buat session baru
+    db = SessionLocal()
+    try:
+        execute_gwas_pipeline(
+            result_id=result_id,
+            vcf_path=vcf_path,
+            csv_path=csv_path,
+            maf=maf,
+            call_rate=call_rate,
+            num_pcs=num_pcs,
+            db=db
+        )
+    except Exception:
+        pass  # execute_gwas_pipeline sudah menandai job sebagai Gagal + error_message
+    finally:
+        db.close()
+
+
 @router.post("/upload", summary="Inisialisasi Pipeline GWAS")
 def upload_files_and_run_pipeline(
+    background_tasks: BackgroundTasks,
     vcf_file: UploadFile = File(...),
     csv_file: UploadFile = File(...),
     maf: float = Form(0.05),
@@ -35,20 +55,15 @@ def upload_files_and_run_pipeline(
     params = {"maf": maf, "call_rate": call_rate, "num_pcs": num_pcs}
     init_analysis_job(result_id, vcf_file.filename, csv_file.filename, params, db)
 
-    # 4. Jalankan Pipeline secara Synchronous menggunakan session db yang sama
-    execute_gwas_pipeline(
-        result_id=result_id,
-        vcf_path=vcf_path,
-        csv_path=csv_path,
-        maf=maf,
-        call_rate=call_rate,
-        num_pcs=num_pcs,
-        db=db
+    # 4. Jalankan Pipeline di background, response langsung dikembalikan
+    background_tasks.add_task(
+        _run_pipeline_background,
+        result_id, vcf_path, csv_path, maf, call_rate, num_pcs
     )
 
     return {
-        "status": "success",
-        "message": "Pipeline GWAS selesai diproses.",
+        "status": "queued",
+        "message": "Pipeline GWAS dimulai.",
         "result_id": result_id
     }
 
@@ -74,6 +89,7 @@ def get_job_status(result_id: str, db: Session = Depends(get_db)):
         "result_id": analysis.result_id,
         "overall_progress": analysis.progress,
         "overall_status": analysis.status.value,
+        "error_message": analysis.error_message,
         "stages": stages_data
     }
 
@@ -111,6 +127,12 @@ def get_job_results(result_id: str, db: Session = Depends(get_db)):
 
 @router.get("/jobs/{result_id}/download/{file_type}", summary="Unduh Berkas Hasil GWAS")
 def download_job_file(result_id: str, file_type: str, db: Session = Depends(get_db)):
+    analysis = db.query(Analysis).filter_by(result_id=result_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Result ID tidak ditemukan")
+    if analysis.status != AnalysisStatus.SUCCESS:
+        raise HTTPException(status_code=400, detail=f"Analisis belum selesai. Status: {analysis.status.value}")
+    
     job_dir = os.path.join("storage", "uploads", result_id)
     
     file_map = {
@@ -130,6 +152,18 @@ def download_job_file(result_id: str, file_type: str, db: Session = Depends(get_
     if file_type == "report_pdf" and not os.path.exists(file_path):
         # Urutan argumen diperbaiki: (result_id, job_dir)
         file_path = generate_pdf_report(result_id, job_dir)
+
+    import glob
+    fallback_globs = {
+        "manhattan_png": "manhattan_*.png",
+        "qq_png": "qq_*.png",
+        "raw_tsv": "gwas_assoc.*.glm.*",
+    }
+    if not os.path.exists(file_path) and file_type in fallback_globs:
+        matches = sorted(glob.glob(os.path.join(job_dir, fallback_globs[file_type])))
+        if matches:
+            file_path = matches[0]
+            filename = os.path.basename(file_path)
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Berkas tidak ditemukan")
