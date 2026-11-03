@@ -5,10 +5,10 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 class AnalysisStatus(str, enum.Enum):
-    QUEUED = "Queued"
-    RUNNING = "Running"
-    SUCCESS = "Selesai"
-    FAILED = "Gagal"
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
 
 class Analysis(Base):
     __tablename__ = "analyses"
