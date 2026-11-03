@@ -31,8 +31,8 @@ export default function ParametersPage() {
 
   // Handler Tombol "Gunakan Sample Data"
   const handleUseSampleData = () => {
-    setVcfFile(new File([""], "garlic.vcf.gz"))
-    setCsvFile(new File([""], "garlic.csv"))
+    setVcfFile(new File([""], "cohort_indonesia_chr22.vcf.gz"))
+    setCsvFile(new File([""], "lipid_pheno_hdl.csv"))
     setMaf(0.05)
     setCallRate(95)
     setPca(10)
@@ -44,7 +44,7 @@ export default function ParametersPage() {
   // Handler Mulai Analisis
   const handleExecute = () => {
     if (isReady) {
-      navigate('/status/GWAS-2026-8891')
+      navigate('/status/GWAS-2024-IDN-CH22')
     }
   }
 

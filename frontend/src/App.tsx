@@ -8,10 +8,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* HARUS <LandingPage /> DENGAN L KAPITAL */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/pipeline" element={<ParametersPage />} />
+        <Route path="/status" element={<StatusPage />} />
+        <Route path="/status-analisis" element={<StatusPage />} />
         <Route path="/status/:jobId" element={<StatusPage />} />
+        <Route path="/result" element={<ResultPage />} />
         <Route path="/result/:jobId" element={<ResultPage />} />
       </Routes>
     </BrowserRouter>

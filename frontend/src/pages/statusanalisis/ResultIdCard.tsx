@@ -1,0 +1,96 @@
+import React, { useState } from 'react';
+import { Copy, Check, Info } from 'lucide-react';
+
+interface ResultIdCardProps {
+  resultId: string;
+  progressPercent: number;
+  currentPhaseName: string;
+}
+
+export const ResultIdCard: React.FC<ResultIdCardProps> = ({
+  resultId,
+  progressPercent,
+  currentPhaseName,
+}) => {
+  const [copied, setCopied] = useState(false);
+
+  const formattedId = resultId.startsWith('#') ? resultId : `#${resultId}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(formattedId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-br from-amber-50/30 via-white to-sky-50/50 p-6 shadow-xs">
+      {/* Top Row: Result ID & Overall Progress */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            RESULT ID
+          </span>
+          <div className="flex items-center gap-2">
+            <div className="rounded-xl border border-sky-200 bg-sky-100/70 px-4 py-1.5 font-mono text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+              {formattedId}
+            </div>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:bg-white active:scale-95 cursor-pointer"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-600">Tersalin!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-cyan-600" />
+                  <span>Salin ID</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="text-left sm:text-right">
+          <span className="block text-xs font-medium text-slate-500 mb-0.5">
+            Status Kemajuan
+          </span>
+          <div className="flex items-baseline sm:justify-end gap-1">
+            <span className="text-3xl sm:text-4xl font-extrabold text-cyan-600 tracking-tight">
+              {progressPercent}%
+            </span>
+            <span className="text-xs font-medium text-slate-500">
+              Selesai
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar & Current Phase */}
+      <div className="mt-5">
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-600 mb-2">
+          <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse inline-block" />
+          <span>{currentPhaseName}</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-500 transition-all duration-700 ease-out"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Info Callout Banner */}
+      <div className="mt-5 flex items-start sm:items-center gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-3 sm:px-4 text-xs text-slate-600">
+        <Info className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5 sm:mt-0" />
+        <p className="leading-relaxed">
+          Simpan Result ID ini untuk mengakses kembali riwayat analisis Anda kapan saja dari menu utama tanpa perlu mempertahankan peramban tetap terbuka.
+        </p>
+      </div>
+    </div>
+  );
+};
+
