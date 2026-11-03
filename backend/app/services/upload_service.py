@@ -1,35 +1,43 @@
 import os
-import uuid
 import shutil
+import gzip
 from fastapi import UploadFile, HTTPException
 
-UPLOAD_DIR = os.getenv("UPLOAD_DIR", "storage/uploads")
-MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", 700))
-MAX_BYTES = MAX_UPLOAD_MB * 1024 * 1024
-
-def save_pipeline_files(vcf_file: UploadFile, csv_file: UploadFile, result_id: str):
-    job_dir = os.path.join(UPLOAD_DIR, result_id)
+def validate_and_save_files(vcf_file: UploadFile, csv_file: UploadFile, job_dir: str) -> tuple[str, str]:
+    """
+    Task 1: Validasi format dasar, cek integritas berkas, dan simpan raw input ke file storage.
+    """
     os.makedirs(job_dir, exist_ok=True)
-
-    # Validasi Ekstensi Ketat
-    if not (vcf_file.filename.endswith('.vcf') or vcf_file.filename.endswith('.vcf.gz')):
+    
+    # 1. Validasi Ekstensi File Genotipe
+    vcf_filename = vcf_file.filename
+    if not (vcf_filename.endswith(".vcf") or vcf_filename.endswith(".vcf.gz")):
         raise HTTPException(status_code=400, detail="File genotipe harus berformat .vcf atau .vcf.gz")
-    if not csv_file.filename.endswith('.csv'):
+    
+    # 2. Validasi Ekstensi File Fenotipe
+    if not csv_file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="File fenotipe harus berformat .csv")
+    
+    vcf_path = os.path.join(job_dir, vcf_filename)
+    csv_path = os.path.join(job_dir, csv_file.filename)
+    
+    # Simpan File ke Storage
+    with open(vcf_path, "wb") as buffer:
+        shutil.copyfileobj(vcf_file.file, buffer)
+        
+    with open(csv_path, "wb") as buffer:
+        shutil.copyfileobj(csv_file.file, buffer)
+        
+    # Cek Validitas Header VCF Sederhana
+    is_gz = vcf_path.endswith(".vcf.gz")
+    open_func = gzip.open if is_gz else open
+    
+    try:
+        with open_func(vcf_path, "rt", errors="ignore") as f:
+            first_line = f.readline()
+            if not first_line.startswith("##fileformat=VCF"):
+                raise HTTPException(status_code=400, detail="Header berkas VCF tidak valid (harus diawali ##fileformat=VCF)")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Gagal membaca file VCF: {str(e)}")
 
-    def _save_file(file_obj: UploadFile, target_filename: str) -> str:
-        target_path = os.path.join(job_dir, target_filename)
-        size = 0
-        with open(target_path, "wb") as buffer:
-            while chunk := file_obj.file.read(8192):
-                size += len(chunk)
-                if size > MAX_BYTES:
-                    os.remove(target_path)
-                    raise HTTPException(status_code=400, detail=f"Ukuran file {file_obj.filename} melebihi batas {MAX_UPLOAD_MB}MB")
-                buffer.write(chunk)
-        return target_path
-
-    vcf_saved = _save_file(vcf_file, "genotype" + (".vcf.gz" if vcf_file.filename.endswith(".vcf.gz") else ".vcf"))
-    csv_saved = _save_file(csv_file, "phenotype.csv")
-
-    return vcf_saved, csv_saved
+    return vcf_path, csv_path
