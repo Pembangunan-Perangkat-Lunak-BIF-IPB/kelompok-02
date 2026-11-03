@@ -1,7 +1,9 @@
 import os
 import subprocess
 from fastapi import HTTPException
+from dotenv import load_dotenv
 
+load_dotenv()
 PLINK = os.getenv("PLINK2_PATH", "plink2")
 
 
@@ -9,7 +11,10 @@ def _run(cmd: list[str], label: str):
     try:
         result = subprocess.run(cmd, capture_output=True, text=True)
     except FileNotFoundError:
-        raise HTTPException(status_code=500, detail="Executabel 'plink2' tidak ditemukan.")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Executabel PLINK ('{PLINK}') tidak ditemukan. Atur env PLINK2_PATH atau letakkan plink2 di PATH."
+        )
     if result.returncode != 0:
         raise HTTPException(status_code=422, detail=f"{label}: {result.stderr or result.stdout}")
 

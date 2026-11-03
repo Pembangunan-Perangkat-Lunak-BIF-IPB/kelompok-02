@@ -1,3 +1,1 @@
-export default function ResultPage() {
-  return <div>Halaman Result</div>
-}
+export { default } from './statusanalisis';

@@ -2,6 +2,7 @@ import { Suspense, useRef, useState, useEffect, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Center, Float, Resize, Environment } from '@react-three/drei'
 import * as THREE from 'three'
+import { ErrorBoundary } from '../common/ErrorBoundary'
 
 const MODEL_PATH = '/models/dna.glb'
 
@@ -21,95 +22,97 @@ function DnaModel({ isPipelinePage }: { isPipelinePage: boolean }) {
     const dirs: THREE.Vector3[] = []
     const rots: THREE.Vector3[] = []
 
-    scene.updateMatrixWorld(true)
+    try {
+      scene.updateMatrixWorld(true)
 
-    scene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh
-       const origMaterial = (mesh.material as THREE.MeshStandardMaterial).clone()
+      scene.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh
+          const origMaterial = (mesh.material as THREE.MeshStandardMaterial).clone()
 
-// === TAMBAHKAN KODE INI UNTUK MENGGANTI WARNA ===
-// Ganti kode hex di bawah dengan warna pilihanmu (misal: '#38bdf8' untuk Cyan, '#f59e0b' untuk Amber/Oranye, atau '#ec4899' untuk Pink)
-origMaterial.color.set('#f59e0b') 
-// ===============================================
+          origMaterial.color.set('#f59e0b')
+          origMaterial.roughness = 0.35
+          origMaterial.metalness = 0.25
 
-origMaterial.roughness = 0.35
-origMaterial.metalness = 0.25
+          const geom = mesh.geometry.clone()
+          geom.applyMatrix4(mesh.matrixWorld)
+          const nonIndexed = geom.index ? geom.toNonIndexed() : geom
 
-        const geom = mesh.geometry.clone()
-        geom.applyMatrix4(mesh.matrixWorld)
-        const nonIndexed = geom.index ? geom.toNonIndexed() : geom
+          const posAttr = nonIndexed.getAttribute('position')
+          const normAttr = nonIndexed.getAttribute('normal')
+          const uvAttr = nonIndexed.getAttribute('uv')
+          const uv1Attr = nonIndexed.getAttribute('uv1')
 
-        const posAttr = nonIndexed.getAttribute('position')
-        const normAttr = nonIndexed.getAttribute('normal')
-        const uvAttr = nonIndexed.getAttribute('uv')
-        const uv1Attr = nonIndexed.getAttribute('uv1')
+          if (!posAttr) return
 
-        const totalVerts = posAttr.count
-        const numChunks = 140
-        const trisPerChunk = Math.max(1, Math.floor(totalVerts / 3 / numChunks))
-        const vertsPerChunk = trisPerChunk * 3
+          const totalVerts = posAttr.count
+          const numChunks = 140
+          const trisPerChunk = Math.max(1, Math.floor(totalVerts / 3 / numChunks))
+          const vertsPerChunk = trisPerChunk * 3
 
-        for (let i = 0; i < totalVerts; i += vertsPerChunk) {
-          const count = Math.min(vertsPerChunk, totalVerts - i)
-          const subGeom = new THREE.BufferGeometry()
+          for (let i = 0; i < totalVerts; i += vertsPerChunk) {
+            const count = Math.min(vertsPerChunk, totalVerts - i)
+            const subGeom = new THREE.BufferGeometry()
 
-          const subPos = new Float32Array(count * 3)
-          for (let j = 0; j < count; j++) {
-            subPos[j * 3] = posAttr.getX(i + j)
-            subPos[j * 3 + 1] = posAttr.getY(i + j)
-            subPos[j * 3 + 2] = posAttr.getZ(i + j)
-          }
-          subGeom.setAttribute('position', new THREE.BufferAttribute(subPos, 3))
-
-          if (normAttr) {
-            const subNorm = new Float32Array(count * 3)
+            const subPos = new Float32Array(count * 3)
             for (let j = 0; j < count; j++) {
-              subNorm[j * 3] = normAttr.getX(i + j)
-              subNorm[j * 3 + 1] = normAttr.getY(i + j)
-              subNorm[j * 3 + 2] = normAttr.getZ(i + j)
+              subPos[j * 3] = posAttr.getX(i + j)
+              subPos[j * 3 + 1] = posAttr.getY(i + j)
+              subPos[j * 3 + 2] = posAttr.getZ(i + j)
             }
-            subGeom.setAttribute('normal', new THREE.BufferAttribute(subNorm, 3))
-          }
+            subGeom.setAttribute('position', new THREE.BufferAttribute(subPos, 3))
 
-          if (uvAttr) {
-            const subUv = new Float32Array(count * 2)
-            for (let j = 0; j < count; j++) {
-              subUv[j * 2] = uvAttr.getX(i + j)
-              subUv[j * 2 + 1] = uvAttr.getY(i + j)
+            if (normAttr) {
+              const subNorm = new Float32Array(count * 3)
+              for (let j = 0; j < count; j++) {
+                subNorm[j * 3] = normAttr.getX(i + j)
+                subNorm[j * 3 + 1] = normAttr.getY(i + j)
+                subNorm[j * 3 + 2] = normAttr.getZ(i + j)
+              }
+              subGeom.setAttribute('normal', new THREE.BufferAttribute(subNorm, 3))
             }
-            subGeom.setAttribute('uv', new THREE.BufferAttribute(subUv, 2))
-          }
 
-          if (uv1Attr) {
-            const subUv1 = new Float32Array(count * 2)
-            for (let j = 0; j < count; j++) {
-              subUv1[j * 2] = uv1Attr.getX(i + j)
-              subUv1[j * 2 + 1] = uv1Attr.getY(i + j)
+            if (uvAttr) {
+              const subUv = new Float32Array(count * 2)
+              for (let j = 0; j < count; j++) {
+                subUv[j * 2] = uvAttr.getX(i + j)
+                subUv[j * 2 + 1] = uvAttr.getY(i + j)
+              }
+              subGeom.setAttribute('uv', new THREE.BufferAttribute(subUv, 2))
             }
-            subGeom.setAttribute('uv1', new THREE.BufferAttribute(subUv1, 2))
-          }
 
-          const subMesh = new THREE.Mesh(subGeom, origMaterial)
-          group.add(subMesh)
+            if (uv1Attr) {
+              const subUv1 = new Float32Array(count * 2)
+              for (let j = 0; j < count; j++) {
+                subUv1[j * 2] = uv1Attr.getX(i + j)
+                subUv1[j * 2 + 1] = uv1Attr.getY(i + j)
+              }
+              subGeom.setAttribute('uv1', new THREE.BufferAttribute(subUv1, 2))
+            }
 
-          const dir = new THREE.Vector3(
-            (Math.random() - 0.5) * 45,
-            (Math.random() - 0.5) * 45,
-            (Math.random() - 0.5) * 45
-          )
-          dirs.push(dir)
+            const subMesh = new THREE.Mesh(subGeom, origMaterial)
+            group.add(subMesh)
 
-          rots.push(
-            new THREE.Vector3(
-              (Math.random() - 0.5) * 3,
-              (Math.random() - 0.5) * 3,
-              (Math.random() - 0.5) * 3
+            const dir = new THREE.Vector3(
+              (Math.random() - 0.5) * 45,
+              (Math.random() - 0.5) * 45,
+              (Math.random() - 0.5) * 45
             )
-          )
+            dirs.push(dir)
+
+            rots.push(
+              new THREE.Vector3(
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 3
+              )
+            )
+          }
         }
-      }
-    })
+      })
+    } catch (err) {
+      console.warn('Gagal memproses mesh DNA 3D:', err)
+    }
 
     return { fragmentedGroup: group, directions: dirs, rotSpeeds: rots }
   }, [scene])
@@ -191,7 +194,11 @@ origMaterial.metalness = 0.25
   )
 }
 
-useGLTF.preload(MODEL_PATH)
+try {
+  useGLTF.preload(MODEL_PATH)
+} catch {
+  // Ignore preload error
+}
 
 export function DnaBackground3D({ isPipelinePage = false }: { isPipelinePage?: boolean }) {
   return (
@@ -199,23 +206,28 @@ export function DnaBackground3D({ isPipelinePage = false }: { isPipelinePage?: b
       className="absolute inset-0 z-10 w-full h-full pointer-events-auto"
       onMouseUp={() => window.dispatchEvent(new Event('pointerup'))}
     >
-      <Canvas camera={{ position: [0, 0, 7], fov: 50 }}>
-        <ambientLight intensity={3.5} />
-        <directionalLight position={[5, 10, 7]} intensity={4.5} color="#ffffff" />
-        <directionalLight position={[-5, -10, -5]} intensity={2.5} color="#ffffff" />
-        <Environment preset="city" />
+      <ErrorBoundary fallback={<div className="absolute inset-0 bg-transparent pointer-events-none" />}>
+        <Canvas 
+          camera={{ position: [0, 0, 7], fov: 50 }}
+          gl={{ antialias: true, powerPreference: 'default' }}
+        >
+          <ambientLight intensity={3.5} />
+          <directionalLight position={[5, 10, 7]} intensity={4.5} color="#ffffff" />
+          <directionalLight position={[-5, -10, -5]} intensity={2.5} color="#ffffff" />
+          <Environment preset="city" />
 
-        <Suspense fallback={null}>
-          <DnaModel isPipelinePage={isPipelinePage} />
-        </Suspense>
+          <Suspense fallback={null}>
+            <DnaModel isPipelinePage={isPipelinePage} />
+          </Suspense>
 
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          rotateSpeed={0.6}
-          dampingFactor={0.05}
-        />
-      </Canvas>
+          <OrbitControls
+            enableZoom={false}
+            enablePan={false}
+            rotateSpeed={0.6}
+            dampingFactor={0.05}
+          />
+        </Canvas>
+      </ErrorBoundary>
     </div>
   )
 }

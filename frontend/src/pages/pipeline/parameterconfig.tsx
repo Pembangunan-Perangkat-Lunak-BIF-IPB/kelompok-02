@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { HelpCircle, Check } from 'lucide-react'
 
 interface ParameterConfigProps {
@@ -20,6 +20,67 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
   onPcaChange,
   isActive
 }) => {
+  // MAF State & Sync
+  const [prevMaf, setPrevMaf] = useState(maf)
+  const [mafStr, setMafStr] = useState(maf === 0 ? '' : maf.toString())
+
+  if (maf !== prevMaf) {
+    setPrevMaf(maf)
+    setMafStr(maf === 0 ? '' : maf.toString())
+  }
+
+  // Call Rate State & Sync
+  const [prevCallRate, setPrevCallRate] = useState(callRate)
+  const [callRateStr, setCallRateStr] = useState(callRate === 0 ? '' : callRate.toString())
+
+  if (callRate !== prevCallRate) {
+    setPrevCallRate(callRate)
+    setCallRateStr(callRate === 0 ? '' : callRate.toString())
+  }
+
+  // PCA State & Sync
+  const [prevPca, setPrevPca] = useState(pca)
+  const [pcaStr, setPcaStr] = useState(pca === 0 ? '' : pca.toString())
+
+  if (pca !== prevPca) {
+    setPrevPca(pca)
+    setPcaStr(pca === 0 ? '' : pca.toString())
+  }
+
+  // Handlers that allow completely clearing the field (deleting the 0)
+  const handleMafChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(',', '.')
+    if (raw === '' || /^\d*\.?\d*$/.test(raw)) {
+      setMafStr(raw)
+      const parsed = parseFloat(raw)
+      const val = isNaN(parsed) ? 0 : parsed
+      setPrevMaf(val)
+      onMafChange(val)
+    }
+  }
+
+  const handleCallRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    if (raw === '' || /^\d+$/.test(raw)) {
+      setCallRateStr(raw)
+      const parsed = parseInt(raw, 10)
+      const val = isNaN(parsed) ? 0 : Math.min(100, parsed)
+      setPrevCallRate(val)
+      onCallRateChange(val)
+    }
+  }
+
+  const handlePcaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    if (raw === '' || /^\d+$/.test(raw)) {
+      setPcaStr(raw)
+      const parsed = parseInt(raw, 10)
+      const val = isNaN(parsed) ? 0 : parsed
+      setPrevPca(val)
+      onPcaChange(val)
+    }
+  }
+
   return (
     <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm mb-4 animate-fade-in-up">
       <div className="flex items-center gap-2 mb-3">
@@ -51,13 +112,25 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
               max="0.05" 
               step="0.01" 
               value={maf}
-              onChange={(e) => onMafChange(parseFloat(e.target.value))}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value)
+                setMafStr(val.toString())
+                setPrevMaf(val)
+                onMafChange(val)
+              }}
               className="w-full mt-3 accent-amber-600 cursor-pointer"
             />
             <input 
-              type="number" 
-              value={maf}
-              onChange={(e) => onMafChange(parseFloat(e.target.value) || 0)}
+              type="text" 
+              inputMode="decimal"
+              placeholder="0.00"
+              value={mafStr}
+              onChange={handleMafChange}
+              onFocus={(e) => {
+                if (e.target.value === '0' || e.target.value === '0.00') {
+                  e.target.select()
+                }
+              }}
               className="w-full mt-2 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] text-slate-800 font-medium focus:outline-none focus:border-cyan-500"
             />
           </div>
@@ -80,9 +153,16 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
 
             <div className="relative mt-6">
               <input 
-                type="number" 
-                value={callRate}
-                onChange={(e) => onCallRateChange(parseInt(e.target.value) || 0)}
+                type="text" 
+                inputMode="numeric"
+                placeholder="0"
+                value={callRateStr}
+                onChange={handleCallRateChange}
+                onFocus={(e) => {
+                  if (e.target.value === '0') {
+                    e.target.select()
+                  }
+                }}
                 className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-800 font-medium focus:outline-none focus:border-amber-500 pr-6"
               />
               <span className="absolute right-2.5 top-1.5 text-[11px] text-slate-400 font-bold">%</span>
@@ -110,7 +190,11 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
                 <button
                   key={val}
                   type="button"
-                  onClick={() => onPcaChange(val)}
+                  onClick={() => {
+                    setPcaStr(val.toString())
+                    setPrevPca(val)
+                    onPcaChange(val)
+                  }}
                   className={`py-1 text-[10px] font-bold rounded-md border transition cursor-pointer ${
                     pca === val 
                       ? 'bg-gradient-to-r from-amber-500 via-cyan-200 to-teal-400 text-slate-950 border-transparent shadow-md animate-gradient-btn' 
@@ -123,9 +207,16 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
             </div>
 
             <input 
-              type="number" 
-              value={pca}
-              onChange={(e) => onPcaChange(parseInt(e.target.value) || 0)}
+              type="text" 
+              inputMode="numeric"
+              placeholder="10"
+              value={pcaStr}
+              onChange={handlePcaChange}
+              onFocus={(e) => {
+                if (e.target.value === '0' || e.target.value === '10') {
+                  e.target.select()
+                }
+              }}
               className="w-full mt-2 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] text-slate-800 font-medium focus:outline-none focus:border-cyan-500"
             />
           </div>

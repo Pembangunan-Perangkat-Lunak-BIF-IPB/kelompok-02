@@ -3,11 +3,15 @@ import glob
 import subprocess
 import pandas as pd  
 from fastapi import HTTPException
+from dotenv import load_dotenv
+
+load_dotenv()
+PLINK = os.getenv("PLINK2_PATH", "plink2")
 
 def run_association_test(qc_prefix: str, matched_csv_path: str, eigenvec_path: str, job_dir: str) -> list[str]:
     out_prefix = os.path.join(job_dir, "gwas_assoc")
 
-    # Konversi matched_phenotype.csv -> format PLINK2 (tab-delimited, header #IID)
+    # Konversi matched_phenotype.csv -> format PLINK2 (tab-delimited, header #FID IID)
     pheno_df = pd.read_csv(matched_csv_path)
     pheno_df.insert(0, "#FID", pheno_df["Sample_ID"])        # FID = IID, sama seperti .fam (--double-id)
     pheno_df = pheno_df.rename(columns={"Sample_ID": "IID"})
@@ -15,7 +19,7 @@ def run_association_test(qc_prefix: str, matched_csv_path: str, eigenvec_path: s
     pheno_df.to_csv(plink_pheno_path, sep="\t", index=False, na_rep="NA", lineterminator="\n")
 
     cmd = [
-        "plink2",
+        PLINK,
         "--bfile", qc_prefix,
         "--pheno", plink_pheno_path,
         "--covar", eigenvec_path,
@@ -23,9 +27,16 @@ def run_association_test(qc_prefix: str, matched_csv_path: str, eigenvec_path: s
         "--out", out_prefix
     ]
     
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Executabel PLINK ('{PLINK}') tidak ditemukan. Pastikan PLINK2_PATH diatur dengan benar."
+        )
+
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=f"Error pada Uji Asosiasi PLINK: {result.stderr}")
+        raise HTTPException(status_code=500, detail=f"Error pada Uji Asosiasi PLINK: {result.stderr or result.stdout}")
     
     # Cari semua file hasil regresi (baik linier maupun logistik)
     glm_files = glob.glob(f"{out_prefix}.*.glm.*")

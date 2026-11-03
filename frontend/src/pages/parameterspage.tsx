@@ -36,7 +36,7 @@ export default function ParametersPage() {
     }
   }
 
-  // Handler Tombol "Gunakan Sample Data" (Berisi sampel dummy valid agar tidak 0 byte)
+  // Handler Tombol "Gunakan Sample Data" (Berisi sampel valid agar tidak 0 byte)
   const handleUseSampleData = () => {
     const sampleIds = Array.from({ length: 35 }, (_, i) => `SAMP_${String(i + 1).padStart(3, '0')}`)
     const vcfHeader = `##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t${sampleIds.join('\t')}\n`
@@ -79,8 +79,9 @@ export default function ParametersPage() {
 
       const response = await apiClient.post('/api/v1/upload', formData)
       
-      // Ambil result_id asli dari response backend (contoh: GWAS-20261103-A1B2C3)
+      // Ambil result_id asli dari response backend
       const resultId = response.data.result_id
+      localStorage.setItem('last_gwas_result_id', resultId)
       navigate(`/status/${resultId}`)
     } catch (err: any) {
       console.error('Error upload:', err)
@@ -116,7 +117,7 @@ export default function ParametersPage() {
           onUseSampleData={handleUseSampleData}
         />
 
-        {/* Jika belum upload, bagian parameter diberi efek disabled / abu-abu transparan */}
+        {/* Jika belum upload, bagian parameter diberi efek disabled */}
         <div className={`transition-all duration-300 ${!isReady ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
           <ParameterConfig
             maf={maf}
