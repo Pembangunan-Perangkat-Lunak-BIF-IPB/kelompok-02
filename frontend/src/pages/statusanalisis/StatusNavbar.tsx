@@ -4,7 +4,7 @@ import { Search } from 'lucide-react'
 
 export const StatusNavbar: React.FC = () => {
   const location = useLocation()
-  const lastJobId = (localStorage.getItem('last_gwas_result_id') || '').trim().replace(/^#/, '')
+
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/'
@@ -14,8 +14,8 @@ export const StatusNavbar: React.FC = () => {
     return location.pathname === path
   }
 
-  const statusPath = lastJobId && lastJobId !== 'sample' ? `/status/${lastJobId}` : '/status'
-  const resultPath = lastJobId && lastJobId !== 'sample' ? `/result/${lastJobId}` : '/result'
+
+
 
   return (
     <div className="flex justify-center pt-6 pb-2 px-4">
@@ -50,7 +50,7 @@ export const StatusNavbar: React.FC = () => {
             Pipeline
           </Link>
           <Link 
-            to={statusPath} 
+            to="/status" 
             className={`px-3.5 py-1.5 rounded-full transition-all ${
               isActive('/status') 
                 ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 
@@ -60,7 +60,7 @@ export const StatusNavbar: React.FC = () => {
             Status Analisis
           </Link>
           <Link 
-            to={resultPath} 
+            to="/result" 
             className={`px-3.5 py-1.5 rounded-full transition-all ${
               isActive('/result') 
                 ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 

@@ -21,8 +21,8 @@ export const StatusAnalisisPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
 
-  // Resolusi ID analisis: hanya dari URL param atau localStorage (tidak ada template dummy)
-  const cleanJobId = (jobId || localStorage.getItem('last_gwas_result_id') || '').trim().replace(/^#/, '');
+  // Resolusi ID analisis: hanya dari URL param (tanpa param URL, tampilkan status belum ada analisis)
+  const cleanJobId = (jobId || '').trim().replace(/^#/, '');
   const hasJob = Boolean(cleanJobId && cleanJobId !== 'sample');
 
   // Live Backend State
@@ -185,7 +185,7 @@ export const StatusAnalisisPage: React.FC = () => {
                     Result ID #{cleanJobId} Tidak Ditemukan
                   </h3>
                   <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                    Sistem tidak menemukan riwayat analisis dengan Result ID tersebut. Silakan masukkan Result ID yang valid atau mulai analisis baru dari halaman Pipeline.
+                    {errorMessage || 'Sistem tidak menemukan riwayat analisis dengan Result ID tersebut. Silakan masukkan Result ID yang valid atau mulai analisis baru dari halaman Pipeline.'}
                   </p>
 
                   <form onSubmit={handleSearchSubmit} className="mt-4 flex flex-col sm:flex-row items-center gap-2 max-w-md">
