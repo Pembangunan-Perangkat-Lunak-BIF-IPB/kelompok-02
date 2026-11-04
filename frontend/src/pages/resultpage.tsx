@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  FileText,
+
   Download,
   Copy,
   Check,
@@ -50,7 +50,7 @@ export default function ResultPage() {
   const navigate = useNavigate();
 
   // Resolusi ID murni dari URL param atau localStorage (tanpa template dummy)
-  const cleanJobId = (jobId || localStorage.getItem('last_gwas_result_id') || '').trim().replace(/^#/, '');
+  const cleanJobId = (jobId || '').trim().replace(/^#/, '');
   const hasJob = Boolean(cleanJobId && cleanJobId !== 'sample');
 
   // States
