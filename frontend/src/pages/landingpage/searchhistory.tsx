@@ -5,6 +5,7 @@ import { Search, Fingerprint, RotateCcw } from 'lucide-react'
 export const SearchHistory: React.FC = () => {
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
+  const lastJobId = (localStorage.getItem('last_gwas_result_id') || '').trim().replace(/^#/, '')
 
   const handleSearch = (targetQuery?: string) => {
     const q = (targetQuery ?? query).trim().replace(/^#/, '')
@@ -29,7 +30,7 @@ export const SearchHistory: React.FC = () => {
 
         <h3 className="text-xl font-bold text-slate-900">Akses Riwayat Analisis</h3>
         <p className="text-slate-500 text-xs mt-1">
-          Lacak status antrean atau muat kembali hasil analisis GWAS Anda sebelumnya menggunakan kode unik.
+          Lacak status antrean atau muat kembali hasil analisis GWAS Anda sebelumnya menggunakan kode unik Result ID.
         </p>
 
         {/* Search Bar Input */}
@@ -39,7 +40,7 @@ export const SearchHistory: React.FC = () => {
           </div>
           <input 
             type="text" 
-            placeholder="Masukkan kode unik (misal GWAS-20261103-...)..."
+            placeholder="Masukkan Result ID (misal GWAS-20261104-...)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -56,24 +57,19 @@ export const SearchHistory: React.FC = () => {
           </button>
         </div>
 
-        {/* Sample Code Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-[10px] text-slate-400 font-medium">
-          <span>Contoh:</span>
-          <button
-            type="button"
-            onClick={() => handleSearch('GWAS-2024-8891')}
-            className="bg-white/80 border border-slate-200 px-2 py-0.5 rounded-md text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            #GWAS-2024-8891
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSearch('sample')}
-            className="bg-white/80 border border-slate-200 px-2 py-0.5 rounded-md text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            #Mode-Demo
-          </button>
-        </div>
+        {/* Recent / Sample Code Badges */}
+        {lastJobId && (
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-[10px] text-slate-400 font-medium">
+            <span>Analisis Terakhir Anda:</span>
+            <button
+              type="button"
+              onClick={() => handleSearch(lastJobId)}
+              className="bg-white/90 border border-sky-300 px-2.5 py-0.5 rounded-md font-mono text-cyan-800 font-bold hover:bg-sky-50 transition-colors cursor-pointer"
+            >
+              #{lastJobId}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   )

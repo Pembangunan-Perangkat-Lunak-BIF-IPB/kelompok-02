@@ -4,12 +4,18 @@ import { Search } from 'lucide-react'
 
 export const PipelineNavbar: React.FC = () => {
   const location = useLocation()
+  const lastJobId = (localStorage.getItem('last_gwas_result_id') || '').trim().replace(/^#/, '')
+
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/'
+    if (path === '/pipeline') return location.pathname === '/pipeline'
     if (path.startsWith('/status')) return location.pathname.startsWith('/status')
     if (path.startsWith('/result')) return location.pathname.startsWith('/result')
     return location.pathname === path
   }
+
+  const statusPath = lastJobId && lastJobId !== 'sample' ? `/status/${lastJobId}` : '/status'
+  const resultPath = lastJobId && lastJobId !== 'sample' ? `/result/${lastJobId}` : '/result'
 
   return (
     <div className="flex justify-center pt-6 pb-2 px-4">
@@ -21,7 +27,7 @@ export const PipelineNavbar: React.FC = () => {
           <span className="font-bold text-base text-slate-900 tracking-tight">Jiwasku</span>
         </Link>
 
-        {/* Nav Links dengan efek sorot pill aktif identik landing page */}
+        {/* Nav Links */}
         <nav className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600">
           <Link 
             to="/" 
@@ -44,7 +50,7 @@ export const PipelineNavbar: React.FC = () => {
             Pipeline
           </Link>
           <Link 
-            to="/status/GWAS-2024-IDN-CH22" 
+            to={statusPath} 
             className={`px-3.5 py-1.5 rounded-full transition-all ${
               isActive('/status') 
                 ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 
@@ -54,7 +60,7 @@ export const PipelineNavbar: React.FC = () => {
             Status Analisis
           </Link>
           <Link 
-            to="/result/sample" 
+            to={resultPath} 
             className={`px-3.5 py-1.5 rounded-full transition-all ${
               isActive('/result') 
                 ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 
@@ -65,7 +71,7 @@ export const PipelineNavbar: React.FC = () => {
           </Link>
         </nav>
 
-        {/* Tombol Cek Riwayat dengan Gradasi Cyan-Amber & Animasi Berjalan */}
+        {/* Tombol Cek Riwayat */}
         <button 
           type="button"
           onClick={() => {
