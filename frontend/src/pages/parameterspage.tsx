@@ -10,12 +10,12 @@ import apiClient from '../api/client'
 export default function ParametersPage() {
   const navigate = useNavigate()
 
-  // State File & Parameter
+  // State File & Parameter (Semua parameter default awal diset ke 0)
   const [vcfFile, setVcfFile] = useState<File | null>(null)
   const [csvFile, setCsvFile] = useState<File | null>(null)
-  const [maf, setMaf] = useState<number>(0.05)
-  const [callRate, setCallRate] = useState<number>(95)
-  const [pca, setPca] = useState<number>(10)
+  const [maf, setMaf] = useState<number>(0)
+  const [callRate, setCallRate] = useState<number>(0)
+  const [pca, setPca] = useState<number>(0)
 
   // State Loading & Error saat kirim ke Backend
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
@@ -149,6 +149,7 @@ export default function ParametersPage() {
               <p className="text-sm font-bold">~5 Menit</p>
             </div>
           </div>
+
           <button
             type="button"
             disabled={!isReady || isSubmitting}
@@ -161,8 +162,8 @@ export default function ParametersPage() {
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Mengunggah...</span>
+                <Loader2 className="w-4 h-4 animate-spin text-slate-900" />
+                <span>Memproses Upload...</span>
               </>
             ) : (
               <>

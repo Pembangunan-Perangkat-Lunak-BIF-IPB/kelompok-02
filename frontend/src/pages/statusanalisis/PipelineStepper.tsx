@@ -1,39 +1,59 @@
 import React from 'react';
-import { Check, Clock, RefreshCw, X, AlertCircle } from 'lucide-react';
+import { Check, Clock, RefreshCw, X } from 'lucide-react';
 import type { PipelineStep } from './types';
 
 interface PipelineStepperProps {
   steps: PipelineStep[];
   syncIntervalSeconds?: number;
   isSyncing?: boolean;
+  hasJob?: boolean;
 }
 
 export const PipelineStepper: React.FC<PipelineStepperProps> = ({
   steps,
   syncIntervalSeconds = 3,
   isSyncing = false,
+  hasJob = true,
 }) => {
   return (
-    <div className="mt-6 rounded-2xl border border-slate-100 bg-white p-6 sm:p-8 shadow-xs">
+    <div
+      className={`mt-6 rounded-2xl border bg-white p-6 sm:p-8 shadow-xs transition-opacity ${
+        !hasJob ? 'border-slate-200/80 opacity-60' : 'border-slate-100'
+      }`}
+    >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-6 border-b border-slate-100">
-        <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-          Tahapan Pipeline GWAS
-        </h2>
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 w-fit">
-          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-          <span>Sinkronisasi Otomatis Tiap {syncIntervalSeconds} Detik</span>
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+            Tahapan Pipeline GWAS
+          </h2>
+          {!hasJob && (
+            <p className="text-xs text-slate-400 mt-0.5">
+              Tahapan akan otomatis aktif setelah Anda menekan tombol Mulai Analisis di Pipeline
+            </p>
+          )}
         </div>
+        {hasJob ? (
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 w-fit">
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>Sinkronisasi Otomatis Tiap {syncIntervalSeconds} Detik</span>
+          </div>
+        ) : (
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500 w-fit">
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <span>Belum Berjalan</span>
+          </div>
+        )}
       </div>
 
       {/* Stepper Timeline */}
       <div className="relative mt-6 space-y-6">
         {steps.map((step, index) => {
           const isLast = index === steps.length - 1;
-          const isRunning = step.status === 'running';
-          const isCompleted = step.status === 'completed';
-          const isQueued = step.status === 'queued';
-          const isFailed = step.status === 'failed';
+          const isRunning = hasJob && step.status === 'running';
+          const isCompleted = hasJob && step.status === 'completed';
+          const isFailed = hasJob && step.status === 'failed';
+          const isQueued = !hasJob || step.status === 'queued';
 
           return (
             <div key={step.id} className="relative flex items-start gap-4">
@@ -128,41 +148,21 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
                         {step.progressPercent ?? 50}%
                       </span>
                     </div>
-
-                    {step.details && (
-                      <p className="mt-2 text-xs text-sky-800/80 leading-relaxed font-sans">
-                        {step.details}
-                      </p>
-                    )}
-                  </div>
-                ) : isFailed ? (
-                  /* Failed Card Highlight */
-                  <div className="rounded-xl border border-red-200 bg-red-50/70 p-4 transition-all">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-red-900 text-sm">
-                          {step.title}
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
-                          <AlertCircle className="w-3 h-3 text-red-600" />
-                          Gagal
-                        </span>
-                      </div>
-                    </div>
-                    {step.details && (
-                      <p className="mt-2 text-xs text-red-700 leading-relaxed font-mono bg-white/70 p-2.5 rounded-lg border border-red-200/60 overflow-x-auto">
-                        {step.details}
-                      </p>
-                    )}
                   </div>
                 ) : (
-                  /* Standard Row for Completed & Queued */
+                  /* Standard Row for Completed, Queued, & Failed */
                   <div className="pt-0.5">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                       <div className="flex items-center gap-2">
                         <span
                           className={`text-sm font-bold ${
-                            isCompleted ? 'text-slate-900' : 'text-slate-700'
+                            !hasJob
+                              ? 'text-slate-500'
+                              : isCompleted
+                              ? 'text-slate-900'
+                              : isFailed
+                              ? 'text-red-700'
+                              : 'text-slate-700'
                           }`}
                         >
                           {step.title}
@@ -170,6 +170,11 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
                         {isCompleted && (
                           <span className="rounded-full bg-emerald-100/80 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                             Selesai
+                          </span>
+                        )}
+                        {isFailed && (
+                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                            Gagal
                           </span>
                         )}
                         {isQueued && (
@@ -192,9 +197,14 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
                       </div>
                     </div>
 
-                    {/* Completed details / snippets */}
+                    {/* Details text */}
                     {isCompleted && step.details && (
                       <p className="mt-1 text-xs text-slate-500 leading-relaxed font-sans">
+                        {step.details}
+                      </p>
+                    )}
+                    {isFailed && step.details && (
+                      <p className="mt-1 text-xs text-red-600 leading-relaxed font-sans">
                         {step.details}
                       </p>
                     )}

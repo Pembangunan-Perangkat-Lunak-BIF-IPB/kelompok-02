@@ -4,12 +4,18 @@ import { DnaBackground3D } from '../../components/layout/DnaBackground3D'
 
 export const HeroSection = () => {
   const location = useLocation()
+  const lastJobId = (localStorage.getItem('last_gwas_result_id') || '').trim().replace(/^#/, '')
+
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/'
+    if (path === '/pipeline') return location.pathname === '/pipeline'
     if (path.startsWith('/status')) return location.pathname.startsWith('/status')
     if (path.startsWith('/result')) return location.pathname.startsWith('/result')
     return location.pathname === path
   }
+
+  const statusPath = lastJobId && lastJobId !== 'sample' ? `/status/${lastJobId}` : '/status'
+  const resultPath = lastJobId && lastJobId !== 'sample' ? `/result/${lastJobId}` : '/result'
 
   return (
     <section className="relative w-full min-h-[600px] bg-slate-950 text-white overflow-hidden flex flex-col justify-between select-none">
@@ -62,7 +68,7 @@ export const HeroSection = () => {
               Pipeline
             </Link>
             <Link 
-              to="/status/GWAS-2024-IDN-CH22" 
+              to={statusPath} 
               className={`px-3.5 py-1.5 rounded-full transition-all ${
                 isActive('/status') 
                   ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 
@@ -72,7 +78,7 @@ export const HeroSection = () => {
               Status Analisis
             </Link>
             <Link 
-              to="/result/sample" 
+              to={resultPath} 
               className={`px-3.5 py-1.5 rounded-full transition-all ${
                 isActive('/result') 
                   ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 
