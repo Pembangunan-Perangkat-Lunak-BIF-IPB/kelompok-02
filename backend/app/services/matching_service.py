@@ -2,8 +2,10 @@ import os
 import gzip
 import pandas as pd
 from fastapi import HTTPException
+from app.services.job_logger import log_job
 
 def run_sample_matching(vcf_path: str, csv_path: str, job_dir: str) -> tuple[str, str]:
+    log_job(job_dir, "Memulai validasi dan pencocokan ID sampel antara VCF dan CSV fenotipe.")
     # 1. Baca Header VCF untuk Ekstraksi Sample ID
     is_gz = vcf_path.endswith(".vcf.gz")
     open_func = gzip.open if is_gz else open
@@ -18,37 +20,43 @@ def run_sample_matching(vcf_path: str, csv_path: str, job_dir: str) -> tuple[str
                 break
                 
     if not vcf_samples:
-        raise HTTPException(status_code=400, detail="Tidak dapat menemukan kolom header ID sampel di berkas VCF")
+        err = "Tidak dapat menemukan kolom header ID sampel di berkas VCF"
+        log_job(job_dir, err, "ERROR")
+        raise HTTPException(status_code=400, detail=err)
+
+    log_job(job_dir, f"Ditemukan {len(vcf_samples)} sampel dalam berkas genotipe VCF.")
 
     # 2. Baca Fenotipe CSV
     try:
         pheno_df = pd.read_csv(csv_path)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Gagal membaca berkas CSV fenotipe: {str(e)}")
+        err = f"Gagal membaca berkas CSV fenotipe: {str(e)}"
+        log_job(job_dir, err, "ERROR")
+        raise HTTPException(status_code=400, detail=err)
         
     pheno_df.columns = [str(c).lstrip("#").strip() for c in pheno_df.columns]
     if "Sample_ID" not in pheno_df.columns and "IID" in pheno_df.columns:
         pheno_df = pheno_df.rename(columns={"IID": "Sample_ID"})
     # FID/IID dibuang supaya tidak terbaca PLINK sebagai kolom fenotipe
-    # (association_service akan membuat #FID dan IID sendiri dari Sample_ID)
     pheno_df = pheno_df.drop(columns=["FID", "IID"], errors="ignore")
 
     if "Sample_ID" not in pheno_df.columns:
-        raise HTTPException(
-            status_code=400,
-            detail="Berkas CSV fenotipe wajib memiliki kolom 'Sample_ID' atau 'IID'"
-        )
+        err = "Berkas CSV fenotipe wajib memiliki kolom 'Sample_ID' atau 'IID'"
+        log_job(job_dir, err, "ERROR")
+        raise HTTPException(status_code=400, detail=err)
     
     csv_samples = pheno_df["Sample_ID"].astype(str).tolist()
+    log_job(job_dir, f"Ditemukan {len(csv_samples)} baris sampel dalam berkas fenotipe CSV.")
 
     # 3. Cari Irisan (Matching) ID Sampel
     matched_ids = [s for s in vcf_samples if str(s) in csv_samples]
     
     if not matched_ids:
-        raise HTTPException(
-            status_code=400, 
-            detail="Pencocokan gagal: Tidak ada satu pun Sample ID yang cocok antara berkas VCF dan CSV"
-        )
+        err = "Pencocokan gagal: Tidak ada satu pun Sample ID yang cocok antara berkas VCF dan CSV"
+        log_job(job_dir, err, "ERROR")
+        raise HTTPException(status_code=400, detail=err)
+
+    log_job(job_dir, f"Pencocokan berhasil: {len(matched_ids)} sampel cocok antara data VCF dan CSV.")
 
     # 4. Buat File Perantara `keep_samples.txt` (format PLINK: FID IID)
     keep_samples_path = os.path.join(job_dir, "keep_samples.txt")

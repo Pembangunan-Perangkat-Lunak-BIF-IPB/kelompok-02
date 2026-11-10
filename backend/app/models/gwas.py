@@ -2,6 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from app.database import Base
+from sqlalchemy import UniqueConstraint   
 
 # 1. Entitas Aksesi (accession)
 class Accession(Base):
@@ -25,6 +26,9 @@ class SNPGenotype(Base):
     allele_alt = Column(String(10), nullable=False)
 
     gwas_results = relationship("GWASResult", back_populates="snp")
+    __table_args__ = (
+        UniqueConstraint("chrom", "position", "allele_ref", "allele_alt", name="uq_snp_locus"),
+    )
 
 
 # 3. Entitas Fenotipe (phenotype)[cite: 15]
@@ -51,7 +55,7 @@ class PhenotypeMeasurement(Base):
 
     accession = relationship("Accession", back_populates="measurements")
     phenotype = relationship("Phenotype", back_populates="measurements")
-
+    analysis_id = Column(Integer, ForeignKey("analyses.id", ondelete="CASCADE"), nullable=True, index=True)
 
 # 5. Entitas Model Analisis (analysis_model)[cite: 15]
 class AnalysisModel(Base):
@@ -80,3 +84,10 @@ class GWASResult(Base):
     snp = relationship("SNPGenotype", back_populates="gwas_results")
     phenotype = relationship("Phenotype", back_populates="gwas_results")
     model = relationship("AnalysisModel", back_populates="gwas_results")
+
+    analysis_id = Column(Integer, ForeignKey("analyses.id", ondelete="CASCADE"), nullable=False, index=True)
+    analysis = relationship("Analysis", back_populates="gwas_results")
+
+    __table_args__ = (
+        UniqueConstraint("analysis_id", "snp_id", "phenotype_id", name="uq_result_per_analysis"),
+    )
