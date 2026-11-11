@@ -3,16 +3,22 @@ import { useNavigate } from 'react-router-dom'
 import { PipelineNavbar } from './pipeline/pipelinenavbar'
 import { PipelineHeader } from './pipeline/pipelineheader'
 import { UploadSection } from './pipeline/uploadsection'
+import { ColumnSelect } from './pipeline/columnselect'
 import { ParameterConfig } from './pipeline/parameterconfig'
-import { Clock, Rocket, Loader2, AlertCircle } from 'lucide-react'
+import { extractCsvPhenotypeColumns } from './pipeline/csvhelper'
+import { Clock, Play, Loader2, AlertCircle, Sparkles } from 'lucide-react'
 import apiClient from '../api/client'
 
 export default function ParametersPage() {
   const navigate = useNavigate()
 
-  // State File & Parameter (Semua parameter default awal diset ke 0)
+  // State File & Kolom Fenotipe Target
   const [vcfFile, setVcfFile] = useState<File | null>(null)
   const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [phenotypeColumns, setPhenotypeColumns] = useState<string[]>([])
+  const [selectedColumn, setSelectedColumn] = useState<string>('')
+
+  // State Parameter GWAS (Default awal diatur ke 0)
   const [maf, setMaf] = useState<number>(0)
   const [callRate, setCallRate] = useState<number>(0)
   const [pca, setPca] = useState<number>(0)
@@ -21,7 +27,7 @@ export default function ParametersPage() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Handler Upload File
+  // Handler Upload File Genotipe (.vcf)
   const handleVcfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setVcfFile(e.target.files[0])
@@ -29,14 +35,24 @@ export default function ParametersPage() {
     }
   }
 
-  const handleCsvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handler Upload File Fenotipe (.csv) & Otomatis Deteksi Header Kolom
+  const handleCsvChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setCsvFile(e.target.files[0])
+      const file = e.target.files[0]
+      setCsvFile(file)
       setErrorMsg(null)
+
+      const extracted = await extractCsvPhenotypeColumns(file)
+      setPhenotypeColumns(extracted)
+      if (extracted.length > 0) {
+        setSelectedColumn(extracted[0])
+      } else {
+        setSelectedColumn('')
+      }
     }
   }
 
-  // Handler Tombol "Gunakan Sample Data" (Berisi sampel valid agar tidak 0 byte)
+  // Handler Tombol "Gunakan Sample Data" (Termasuk beberapa pilihan kolom fenotipe)
   const handleUseSampleData = () => {
     const sampleIds = Array.from({ length: 35 }, (_, i) => `SAMP_${String(i + 1).padStart(3, '0')}`)
     const vcfHeader = `##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t${sampleIds.join('\t')}\n`
@@ -45,21 +61,31 @@ export default function ParametersPage() {
       return `22\t${10000 + i * 150}\trs${1000 + i}\tA\tG\t100\tPASS\t.\tGT\t${gts}`
     }).join('\n') + '\n'
 
-    const csvHeader = `FID,IID,Sample_ID,Fenotipe\n`
-    const csvRows = sampleIds.map((id, idx) => `${id},${id},${id},${(120 + (idx % 15) * 3.5).toFixed(2)}`).join('\n') + '\n'
+    // Contoh berkas dengan 4 kolom fenotipe klinis realistis
+    const sampleCols = ['HDL', 'LDL', 'Trigliserida', 'Fenotipe_Lipid']
+    const csvHeader = `FID,IID,Sample_ID,${sampleCols.join(',')}\n`
+    const csvRows = sampleIds.map((id, idx) => {
+      const hdl = (45 + (idx % 10) * 2.1).toFixed(2)
+      const ldl = (110 + (idx % 8) * 4.3).toFixed(2)
+      const tg = (130 + (idx % 12) * 5.0).toFixed(2)
+      const lipid = (120 + (idx % 15) * 3.5).toFixed(2)
+      return `${id},${id},${id},${hdl},${ldl},${tg},${lipid}`
+    }).join('\n') + '\n'
 
     setVcfFile(new File([vcfHeader + vcfRows], 'cohort_indonesia_chr22.vcf', { type: 'text/plain' }))
     setCsvFile(new File([csvHeader + csvRows], 'lipid_pheno.csv', { type: 'text/csv' }))
-    setMaf(0.05)
-    setCallRate(95)
-    setPca(10)
+    setPhenotypeColumns(sampleCols)
+    setSelectedColumn(sampleCols[0])
+    setMaf(0)
+    setCallRate(0)
+    setPca(0)
     setErrorMsg(null)
   }
 
-  // SYARAT UTAMA: Kedua file wajib ada agar form parameter & tombol aktif
+  // SYARAT UTAMA: Kedua file wajib ada agar form parameter & tombol eksekusi aktif
   const isReady = Boolean(vcfFile && csvFile)
 
-  // Handler Mulai Analisis -> Langsung ke POST /api/v1/upload di Backend
+  // Handler Mulai Analisis -> Mengirim data ke POST /api/v1/upload di Backend
   const handleExecute = async () => {
     if (!isReady || !vcfFile || !csvFile || isSubmitting) return
 
@@ -77,15 +103,21 @@ export default function ParametersPage() {
       formData.append('call_rate', String(normalizedCallRate))
       formData.append('num_pcs', String(pca))
 
+      // Sertakan kolom fenotipe yang dipilih pengguna
+      if (selectedColumn) {
+        formData.append('pheno_col', selectedColumn)
+      }
+
       const response = await apiClient.post('/api/v1/upload', formData)
       
       // Ambil result_id asli dari response backend
       const resultId = response.data.result_id
       localStorage.setItem('last_gwas_result_id', resultId)
       navigate(`/status/${resultId}`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error upload:', err)
-      const detail = err.response?.data?.detail || 'Gagal menghubungi server Backend di port 8000.'
+      const axiosErr = err as { response?: { data?: { detail?: unknown } } }
+      const detail = axiosErr.response?.data?.detail || 'Gagal menghubungi server Backend di port 8000.'
       setErrorMsg(typeof detail === 'string' ? detail : JSON.stringify(detail))
     } finally {
       setIsSubmitting(false)
@@ -109,6 +141,7 @@ export default function ParametersPage() {
           </div>
         )}
 
+        {/* Step 1: Upload Dataset Genomik & Klinis */}
         <UploadSection
           vcfFile={vcfFile}
           csvFile={csvFile}
@@ -117,7 +150,15 @@ export default function ParametersPage() {
           onUseSampleData={handleUseSampleData}
         />
 
-        {/* Jika belum upload, bagian parameter diberi efek disabled */}
+        {/* Step 2: Pilih Kolom Fenotipe */}
+        <ColumnSelect
+          columns={phenotypeColumns}
+          selectedColumn={selectedColumn}
+          onSelectColumn={setSelectedColumn}
+          isActive={isReady}
+        />
+
+        {/* Step 3: Konfigurasi Parameter GWAS & Kontrol Kualitas */}
         <div className={`transition-all duration-300 ${!isReady ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
           <ParameterConfig
             maf={maf}
@@ -127,25 +168,34 @@ export default function ParametersPage() {
             onCallRateChange={setCallRate}
             onPcaChange={setPca}
             isActive={isReady}
+            stepNumber={3}
           />
         </div>
 
         {/* Bottom Execution Bar */}
         <div
-          className={`rounded-2xl p-4 flex items-center justify-between transition-all ${
+          className={`rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 transition-all ${
             isReady ? 'bg-cyan-500 text-white shadow-lg' : 'bg-slate-300 text-slate-500'
           }`}
         >
           <div className="flex items-center gap-3 pl-2">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 ${
                 isReady ? 'bg-amber-400 text-slate-900' : 'bg-slate-400 text-white'
               }`}
             >
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs font-medium opacity-90">Estimasi Waktu Komputasi:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium opacity-90">Estimasi Waktu Komputasi:</span>
+                {isReady && selectedColumn && (
+                  <span className="bg-white/20 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    Target: {selectedColumn}
+                  </span>
+                )}
+              </div>
               <p className="text-sm font-bold">~5 Menit</p>
             </div>
           </div>
@@ -167,7 +217,7 @@ export default function ParametersPage() {
               </>
             ) : (
               <>
-                <Rocket className="w-4 h-4" />
+                <Play className="w-3.5 h-3.5 fill-current" />
                 <span>Mulai Analisis</span>
               </>
             )}

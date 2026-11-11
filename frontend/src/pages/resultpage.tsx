@@ -14,7 +14,7 @@ import {
   Eye,
   X,
   Sparkles,
-  Rocket,
+  ArrowRight,
 } from 'lucide-react';
 import apiClient, { API_BASE_URL } from '../api/client';
 import { StatusNavbar } from './statusanalisis/StatusNavbar';
@@ -227,7 +227,7 @@ export default function ResultPage() {
                   to="/pipeline"
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-sky-500 to-cyan-400 px-6 py-3 text-xs sm:text-sm font-bold text-slate-950 shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
                 >
-                  <Rocket className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4" />
                   <span>Buka Menu Pipeline</span>
                 </Link>
               </div>

@@ -27,13 +27,13 @@ export const PipelineHeader: React.FC<PipelineHeaderProps> = ({ currentStep }) =
 
         <div className="flex items-center gap-2.5">
           <div className={`w-7 h-7 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${
-            currentStep >= 2 ? 'bg-amber-200 text-white' : 'bg-amber-100 text-white-600'
+            currentStep >= 2 ? 'bg-amber-500 text-white shadow-xs' : 'bg-slate-100 text-slate-400'
           }`}>
             2
           </div>
           <div>
-            <h4 className="text-[11px] font-bold text-slate-900">Step 2: Konfigurasi Parameter</h4>
-            <p className="text-[10px] text-slate-400">QC, MAF, Call Rate, & PCA</p>
+            <h4 className="text-[11px] font-bold text-slate-900">Step 2: Target & Parameter</h4>
+            <p className="text-[10px] text-slate-400">Pilih Kolom Fenotipe, QC, & PCA</p>
           </div>
         </div>
 

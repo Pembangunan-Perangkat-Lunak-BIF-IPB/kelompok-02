@@ -20,10 +20,12 @@ export const PipelineNavbar: React.FC = () => {
   return (
     <div className="flex justify-center pt-6 pb-2 px-4">
       <header className="flex items-center justify-between bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg border border-white/50 w-full max-w-4xl text-slate-800">
-        <Link to="/" className="flex items-center gap-2 group cursor-pointer">
-          <div className="w-7 h-7 bg-sky-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md group-hover:scale-105 transition-transform">
-            J
-          </div>
+        <Link to="/" className="flex items-center gap-2.5 group cursor-pointer">
+          <img 
+            src="/logo.png" 
+            alt="Logo Jiwasku" 
+            className="w-7 h-7 object-contain rounded-full shadow-xs group-hover:scale-105 transition-transform" 
+          />
           <span className="font-bold text-base text-slate-900 tracking-tight">Jiwasku</span>
         </Link>
 
