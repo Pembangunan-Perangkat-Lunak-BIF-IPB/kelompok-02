@@ -9,6 +9,7 @@ interface ParameterConfigProps {
   onCallRateChange: (val: number) => void
   onPcaChange: (val: number) => void
   isActive: boolean
+  stepNumber?: number
 }
 
 export const ParameterConfig: React.FC<ParameterConfigProps> = ({
@@ -18,7 +19,8 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
   onMafChange,
   onCallRateChange,
   onPcaChange,
-  isActive
+  isActive,
+  stepNumber = 3
 }) => {
   // MAF State & Sync
   const [prevMaf, setPrevMaf] = useState(maf)
@@ -134,7 +136,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
       <div className="flex items-center gap-2 mb-3">
         {/* Nomor Step */}
         <span className="w-6 h-6 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-teal-400 text-slate-950 font-bold text-[10px] flex items-center justify-center shadow-md animate-gradient-btn">
-          2
+          {stepNumber}
         </span>
         <h2 className="text-sm font-bold text-slate-900">Konfigurasi Parameter GWAS & Kontrol Kualitas</h2>
       </div>

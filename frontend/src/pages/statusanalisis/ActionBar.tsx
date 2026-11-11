@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, ArrowRight, RotateCcw, Rocket } from 'lucide-react';
+import { RefreshCw, ArrowRight, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ActionBarProps {
@@ -34,7 +34,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           onClick={handleGoToPipeline}
           className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-sky-500 to-cyan-400 px-6 py-3 text-xs sm:text-sm font-bold text-slate-950 shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer animate-gradient-btn"
         >
-          <Rocket className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4" />
           <span>Mulai Analisis di Pipeline</span>
         </button>
       ) : isFailed ? (

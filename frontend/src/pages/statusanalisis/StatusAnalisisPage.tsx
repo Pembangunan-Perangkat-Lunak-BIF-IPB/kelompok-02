@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Clock, ChevronRight, AlertCircle, Search, Rocket } from 'lucide-react';
+import { Clock, ChevronRight, AlertCircle, Search, Info } from 'lucide-react';
 import { StatusNavbar } from './StatusNavbar';
 import { ResultIdCard } from './ResultIdCard';
 import { PipelineStepper } from './PipelineStepper';
@@ -214,7 +214,7 @@ export const StatusAnalisisPage: React.FC = () => {
             <div className="mb-6 rounded-2xl border border-sky-100 bg-sky-50/70 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 shrink-0 mt-0.5">
-                  <Rocket className="w-4 h-4" />
+                  <Info className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
