@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Clock, ChevronRight, AlertCircle, Search, Info } from 'lucide-react';
+import { Clock, ChevronRight, AlertCircle, Search, Info, Terminal, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { StatusNavbar } from './StatusNavbar';
 import { ResultIdCard } from './ResultIdCard';
 import { PipelineStepper } from './PipelineStepper';
@@ -34,6 +34,14 @@ export const StatusAnalisisPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [notFound, setNotFound] = useState<boolean>(false);
+  const [parameters, setParameters] = useState<{
+    maf?: number;
+    call_rate?: number;
+    num_pcs?: number;
+    pheno_name?: string | null;
+  } | null>(null);
+  const [jobLog, setJobLog] = useState<string>('');
+  const [showLogConsole, setShowLogConsole] = useState<boolean>(false);
 
   // Search Bar State saat ID tidak ditemukan / ingin cari ID lain
   const [searchInput, setSearchInput] = useState<string>('');
@@ -56,6 +64,9 @@ export const StatusAnalisisPage: React.FC = () => {
         const data = response.data;
         setNotFound(false);
         setOverallProgress(data.overall_progress ?? 0);
+        if (data.parameters) {
+          setParameters(data.parameters);
+        }
 
         const statusUpper = (data.overall_status || '').toUpperCase();
         const hasCompleted = statusUpper === 'SUCCESS';
@@ -64,6 +75,18 @@ export const StatusAnalisisPage: React.FC = () => {
         setIsCompleted(hasCompleted);
         setIsFailed(hasFailed);
         setErrorMessage(data.error_message || null);
+
+        // Ambil live job log dari backend untuk monitoring proses
+        try {
+          const logRes = await apiClient.get(`/api/v1/jobs/${cleanJobId}/log`, {
+            responseType: 'text',
+          });
+          if (isSubscribed && logRes.data) {
+            setJobLog(String(logRes.data));
+          }
+        } catch (_) {
+          // Log mungkin sedang dalam proses inisialisasi
+        }
 
         // Petakan array stages dari backend ke PipelineStep[]
         if (Array.isArray(data.stages) && data.stages.length > 0) {
@@ -242,7 +265,43 @@ export const StatusAnalisisPage: React.FC = () => {
             currentPhaseName={currentPhaseName}
             isFailed={isFailed}
             hasJob={hasJob && !notFound}
+            phenoName={parameters?.pheno_name}
           />
+
+          {/* Banner Peringatan Analisis Gagal */}
+          {hasJob && isFailed && (
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50/90 p-5 shadow-xs animate-fade-in">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-red-900">
+                    Analisis GWAS Terhenti (Gagal)
+                  </h3>
+                  <p className="text-xs text-red-800 mt-1 leading-relaxed">
+                    {errorMessage || 'Terjadi kesalahan teknis saat mengeksekusi pipeline GWAS di server backend.'}
+                  </p>
+                  <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowLogConsole(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors"
+                    >
+                      <Terminal className="w-3.5 h-3.5" />
+                      <span>Buka Log Diagnostik</span>
+                    </button>
+                    <a
+                      href={`${apiClient.defaults.baseURL || ''}/api/v1/jobs/${cleanJobId}/download/pipeline_log`}
+                      download={`pipeline_${cleanJobId}.log`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-300 bg-white hover:bg-red-50 text-red-800 text-xs font-semibold shadow-xs cursor-pointer transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5 text-red-600" />
+                      <span>Unduh pipeline.log</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Main GWAS Pipeline Stepper Card */}
           <PipelineStepper
@@ -251,6 +310,53 @@ export const StatusAnalisisPage: React.FC = () => {
             isSyncing={isSyncing}
             hasJob={hasJob && !notFound}
           />
+
+          {/* Real-time Backend Log Console */}
+          {hasJob && !notFound && (
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setShowLogConsole((prev) => !prev)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <Terminal className="w-3.5 h-3.5 text-cyan-600" />
+                  <span>{showLogConsole ? 'Sembunyikan Log Real-time' : 'Lihat Log Real-time Backend'}</span>
+                  {showLogConsole ? (
+                    <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </button>
+
+                {jobLog && (
+                  <a
+                    href={`${apiClient.defaults.baseURL || ''}/api/v1/jobs/${cleanJobId}/download/pipeline_log`}
+                    download={`pipeline_${cleanJobId}.log`}
+                    className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-cyan-700 font-medium transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Unduh Log Pipeline</span>
+                  </a>
+                )}
+              </div>
+
+              {showLogConsole && (
+                <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950 p-4 text-xs font-mono text-slate-200 shadow-inner">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-block w-2 h-2 rounded-full ${isCompleted ? 'bg-emerald-400' : isFailed ? 'bg-red-400' : 'bg-cyan-400 animate-pulse'}`} />
+                      <span>Catatan Eksekusi Pipeline #{cleanJobId}</span>
+                    </div>
+                    <span>{jobLog ? `${jobLog.split('\n').filter(Boolean).length} baris log` : 'Memuat log...'}</span>
+                  </div>
+                  <pre className="max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed text-slate-300 font-mono text-[11px] select-text">
+                    {jobLog || 'Belum ada log yang dicatat oleh sistem backend...'}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Bottom Action Bar */}
           <ActionBar

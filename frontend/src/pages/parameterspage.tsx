@@ -105,6 +105,7 @@ export default function ParametersPage() {
 
       // Sertakan kolom fenotipe yang dipilih pengguna
       if (selectedColumn) {
+        formData.append('pheno_name', selectedColumn)
         formData.append('pheno_col', selectedColumn)
       }
 
