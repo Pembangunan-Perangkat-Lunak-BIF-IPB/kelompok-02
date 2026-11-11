@@ -30,6 +30,9 @@ class Analysis(Base):
 
     stages = relationship("AnalysisStage", back_populates="analysis", cascade="all, delete-orphan")
 
+    gwas_results = relationship("GWASResult", back_populates="analysis",
+                            cascade="all, delete-orphan", passive_deletes=True)
+
 
 class AnalysisStage(Base):
     __tablename__ = "analysis_stages"
