@@ -39,10 +39,10 @@ def run_association_test(
     cmd = [
         PLINK,
         "--bfile", qc_prefix,
+        "--allow-extra-chr",
         "--pheno", plink_pheno_path,
     ]
 
-    # Beri tahu PLINK untuk menganalisis hanya fenotipe terpilih
     if pheno_name:
         cmd.extend(["--pheno-name", str(pheno_name)])
 

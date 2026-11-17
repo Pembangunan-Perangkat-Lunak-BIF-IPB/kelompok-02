@@ -66,11 +66,12 @@ def run_pca_computation(qc_prefix: str, job_dir: str, n_pcs: int = 10) -> tuple[
         log_job(job_dir, f"Menggunakan {n_pcs} Principal Components sebagai kovariat stratifikasi populasi.")
 
     # Langkah 1: hitung frekuensi alel (.afreq)
-    _run([PLINK, "--bfile", qc_prefix, "--freq", "--out", freq_prefix], "Hitung frekuensi alel", job_dir)
+    _run([PLINK, "--bfile", qc_prefix, "--allow-extra-chr", "--freq", "--out", freq_prefix], "Hitung frekuensi alel", job_dir)
 
     # Langkah 2: PCA dengan frekuensi tersebut
     _run([
-        PLINK, "--bfile", qc_prefix, 
+        PLINK, "--bfile", qc_prefix,
+        "--allow-extra-chr",
         "--read-freq", f"{freq_prefix}.afreq",
         "--pca", str(n_pcs), 
         "--out", pca_prefix

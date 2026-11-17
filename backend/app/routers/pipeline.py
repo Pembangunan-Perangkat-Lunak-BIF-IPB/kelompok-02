@@ -15,19 +15,31 @@ from app.services.job_logger import get_job_log
 
 router = APIRouter(prefix="/api/v1", tags=["GWAS Pipeline"])
 
-def _run_pipeline_background(result_id, vcf_path, csv_path, maf, call_rate, num_pcs, pheno_name=None):
+def _run_pipeline_background(
+    result_id: str,
+    genotype_path: str,
+    csv_path: str,
+    maf: float,
+    call_rate: float,
+    num_pcs: int,
+    pheno_name: Optional[str] = None,
+    call_rate_ind: float = 0.90,
+    genotype_type: str = "vcf"
+):
     # Session milik request sudah ditutup setelah response terkirim, jadi buat session baru
     db = SessionLocal()
     try:
         execute_gwas_pipeline(
             result_id=result_id,
-            vcf_path=vcf_path,
+            genotype_path=genotype_path,
             csv_path=csv_path,
             maf=maf,
             call_rate=call_rate,
             num_pcs=num_pcs,
             db=db,
-            pheno_name=pheno_name
+            pheno_name=pheno_name,
+            call_rate_ind=call_rate_ind,
+            genotype_type=genotype_type
         )
     except Exception:
         pass  # execute_gwas_pipeline sudah menandai job sebagai Gagal + mencatat log
@@ -38,12 +50,16 @@ def _run_pipeline_background(result_id, vcf_path, csv_path, maf, call_rate, num_
 @router.post("/upload", summary="Inisialisasi Pipeline GWAS")
 def upload_files_and_run_pipeline(
     background_tasks: BackgroundTasks,
-    vcf_file: UploadFile = File(...),
-    csv_file: UploadFile = File(...),
-    maf: float = Form(0.05),
-    call_rate: float = Form(0.95),
-    num_pcs: int = Form(10),
-    pheno_name: Optional[str] = Form(None),
+    csv_file: UploadFile = File(..., description="Berkas fenotipe format CSV"),
+    vcf_file: Optional[UploadFile] = File(None, description="Berkas genotipe VCF (.vcf / .vcf.gz)"),
+    bed_file: Optional[UploadFile] = File(None, description="Berkas PLINK biner (.bed)"),
+    bim_file: Optional[UploadFile] = File(None, description="Berkas PLINK biner (.bim)"),
+    fam_file: Optional[UploadFile] = File(None, description="Berkas PLINK biner (.fam)"),
+    maf: float = Form(0.05, description="Minor Allele Frequency threshold"),
+    call_rate: float = Form(0.95, description="Call rate SNP / marker threshold"),
+    call_rate_ind: float = Form(0.90, description="Call rate individu threshold"),
+    num_pcs: int = Form(10, description="Jumlah Principal Components"),
+    pheno_name: Optional[str] = Form(None, description="Nama kolom fenotipe target"),
     db: Session = Depends(get_db)
 ):
     result_id = f"GWAS-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
@@ -52,29 +68,52 @@ def upload_files_and_run_pipeline(
     job_dir = os.path.join("storage", "uploads", result_id)
     os.makedirs(job_dir, exist_ok=True)
 
-    # 2. Simpan berkas fisik ke disk
-    vcf_path, csv_path = validate_and_save_files(vcf_file, csv_file, job_dir)
+    # 2. Simpan berkas fisik ke disk (dukung VCF atau triplet BED/BIM/FAM)
+    saved_files = validate_and_save_files(
+        csv_file=csv_file,
+        job_dir=job_dir,
+        vcf_file=vcf_file,
+        bed_file=bed_file,
+        bim_file=bim_file,
+        fam_file=fam_file
+    )
+
+    genotype_path = saved_files["genotype_path"]
+    csv_path = saved_files["csv_path"]
+    genotype_type = saved_files["genotype_type"]
+    genotype_display = os.path.basename(genotype_path)
 
     # 3. Inisialisasi Job di Database
     params = {
         "maf": maf, 
-        "call_rate": call_rate, 
+        "call_rate": call_rate,
+        "call_rate_ind": call_rate_ind,
         "num_pcs": num_pcs,
-        "pheno_name": pheno_name
+        "pheno_name": pheno_name,
+        "genotype_type": genotype_type
     }
-    init_analysis_job(result_id, vcf_file.filename, csv_file.filename, params, db)
+    init_analysis_job(result_id, genotype_display, csv_file.filename, params, db)
 
     # 4. Jalankan Pipeline di background, response langsung dikembalikan
     background_tasks.add_task(
         _run_pipeline_background,
-        result_id, vcf_path, csv_path, maf, call_rate, num_pcs, pheno_name
+        result_id=result_id,
+        genotype_path=genotype_path,
+        csv_path=csv_path,
+        maf=maf,
+        call_rate=call_rate,
+        num_pcs=num_pcs,
+        pheno_name=pheno_name,
+        call_rate_ind=call_rate_ind,
+        genotype_type=genotype_type
     )
 
     return {
         "status": "queued",
         "message": "Pipeline GWAS dimulai.",
         "result_id": result_id,
-        "pheno_name": pheno_name
+        "pheno_name": pheno_name,
+        "genotype_type": genotype_type
     }
 
 

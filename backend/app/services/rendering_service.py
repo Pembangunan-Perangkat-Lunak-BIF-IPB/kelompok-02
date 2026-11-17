@@ -41,13 +41,31 @@ def _load_glm(glm_file: str) -> pd.DataFrame:
     df = df.dropna(subset=["P"])
     df = df[(df["P"] > 0) & (df["P"] <= 1)]
 
-    # Konversi kromosom -> angka untuk pengurutan sumbu X (X=23, Y=24, MT=25)
+    # Konversi kromosom -> angka / urutan terstruktur untuk pengurutan sumbu X
+    # Mendukung kromosom numerik, kromosom sex, dan kromosom non-standar/tumbuhan
     chrom_map = {"X": 23, "Y": 24, "XY": 25, "MT": 26, "M": 26}
-    chrom_str = df["CHROM"].astype(str).str.replace("chr", "", case=False)
-    df["CHROM_NUM"] = pd.to_numeric(chrom_str.map(lambda c: chrom_map.get(c.upper(), c)), errors="coerce")
-    df = df.dropna(subset=["CHROM_NUM"])
-    df["CHROM_NUM"] = df["CHROM_NUM"].astype(int)
-    df["CHROM"] = chrom_str.loc[df.index]
+    raw_chrom_str = df["CHROM"].astype(str)
+    chrom_clean = raw_chrom_str.str.replace("chr", "", case=False)
+
+    numeric_chrom = pd.to_numeric(chrom_clean.map(lambda c: chrom_map.get(c.upper(), c)), errors="coerce")
+    
+    # Jika sebagian kromosom bukan angka (misal Scaffold_1 atau nama string lain),
+    # buat urutan stabil berdasarkan urutan kategori unik
+    if numeric_chrom.isna().any():
+        unique_chroms = list(dict.fromkeys(raw_chrom_str))
+        def _sort_key(c):
+            c_sub = str(c).lower().replace("chr", "")
+            try:
+                return (0, int(c_sub))
+            except ValueError:
+                return (1, str(c))
+        sorted_chroms = sorted(unique_chroms, key=_sort_key)
+        chrom_order_map = {c: i + 1 for i, c in enumerate(sorted_chroms)}
+        df["CHROM_NUM"] = raw_chrom_str.map(chrom_order_map).astype(int)
+    else:
+        df["CHROM_NUM"] = numeric_chrom.astype(int)
+
+    df["CHROM"] = chrom_clean.loc[df.index]
 
     # Identifikasi alel efek (A1) dan alel referensi
     if "A1" in df.columns:
@@ -63,16 +81,24 @@ def _load_glm(glm_file: str) -> pd.DataFrame:
     return df.sort_values(["CHROM_NUM", "POS"]).reset_index(drop=True)
 
 
-def _manhattan(df: pd.DataFrame, out_path: str, title: str):
+def _manhattan(df: pd.DataFrame, out_path: str, title: str, sig_threshold: Optional[float] = None, suggestive_threshold: Optional[float] = None):
     """
     Membuat Manhattan Plot dengan estetika modern yang selaras dengan UI Frontend Jiwasku:
     - Alternating palette: Sky-600 (#0284c7) dan Slate-500 (#64748b)
-    - Significant hits: Amber-400 (#FBB034) dengan outline tegas
-    - Ambang batas genomik (5e-8) dan sugestif (1e-5)
+    - Significant hits: Merah (#dc2626) untuk varian yang melampaui sig_threshold (0.05/m_eff)
+    - Garis horizontal merah untuk sig_threshold (-log10(sig_threshold))
+    - Garis putus-putus biru untuk suggestive_threshold (-log10(suggestive_threshold))
     - Despine (tanpa garis tepi kaku atas/kanan) dan grid horizontal lembut
     """
     df = df.copy()
     df["minus_log_p"] = -np.log10(df["P"])
+    n_snps = len(df)
+
+    # Ambang batas dinamis berbasis m_eff
+    if sig_threshold is None:
+        sig_threshold = 0.05 / n_snps if n_snps > 0 else 5e-8
+    if suggestive_threshold is None:
+        suggestive_threshold = 1.0 / n_snps if n_snps > 0 else 1e-5
 
     # Hitung posisi kumulatif koordinat sumbu X per kromosom
     offset, ticks, labels = 0, [], []
@@ -80,7 +106,9 @@ def _manhattan(df: pd.DataFrame, out_path: str, title: str):
     for chrom, grp in df.groupby("CHROM_NUM", sort=True):
         xs[grp.index] = grp["POS"].values + offset
         ticks.append(offset + (grp["POS"].max() - grp["POS"].min()) / 2 + grp["POS"].min())
-        labels.append(str(chrom))
+        # Label kromosom unik
+        chr_label = str(grp["CHROM"].iloc[0])
+        labels.append(chr_label)
         offset += grp["POS"].max() + 1
     df["x"] = xs
 
@@ -100,22 +128,22 @@ def _manhattan(df: pd.DataFrame, out_path: str, title: str):
             edgecolors='none', zorder=2
         )
 
-    # Sorot varian signifikan genomik (P < 5e-8)
-    hits = df[df["P"] < GWAS_THRESHOLD]
-    if not hits.empty:
+    # Sorot varian signifikan (P <= sig_threshold) dengan warna merah tegas
+    sig_hits = df[df["P"] <= sig_threshold]
+    if not sig_hits.empty:
         ax.scatter(
-            hits["x"], hits["minus_log_p"],
-            s=36, color="#FBB034", edgecolors="#d97706", linewidths=1.2,
-            alpha=1.0, zorder=5, label=f"Signifikan (P < 5e-8, n={len(hits)})"
+            sig_hits["x"], sig_hits["minus_log_p"],
+            s=36, color="#ef4444", edgecolors="#b91c1c", linewidths=1.2,
+            alpha=1.0, zorder=5, label=f"Signifikan (P ≤ {sig_threshold:.1e}, n={len(sig_hits)})"
         )
 
-    # Garis ambang batas signifikansi genomik standar (5 × 10⁻⁸)
-    gwas_line = -np.log10(GWAS_THRESHOLD)
-    ax.axhline(gwas_line, color="#FBB034", linestyle="--", linewidth=1.4, zorder=3, label="Ambang Genomik (5e-8)")
+    # Garis horizontal merah untuk sig_threshold (-log10(sig_threshold))
+    sig_line = -np.log10(sig_threshold)
+    ax.axhline(sig_line, color="#dc2626", linestyle="-", linewidth=1.4, zorder=4, label=f"Ambang Signifikan ({sig_threshold:.1e})")
 
-    # Garis ambang batas sugestif (1 × 10⁻⁵)
-    if df["minus_log_p"].max() >= -np.log10(SUGGESTIVE_THRESHOLD):
-        ax.axhline(-np.log10(SUGGESTIVE_THRESHOLD), color="#94a3b8", linestyle=":", linewidth=1.0, zorder=3, label="Ambang Sugestif (1e-5)")
+    # Garis putus-putus biru untuk suggestive_threshold (-log10(suggestive_threshold))
+    sug_line = -np.log10(suggestive_threshold)
+    ax.axhline(sug_line, color="#2563eb", linestyle="--", linewidth=1.2, zorder=3, label=f"Ambang Sugestif ({suggestive_threshold:.1e})")
 
     ax.set_xticks(ticks)
     ax.set_xticklabels(labels, fontsize=8, color="#475569")
@@ -131,7 +159,8 @@ def _manhattan(df: pd.DataFrame, out_path: str, title: str):
     ax.spines['bottom'].set_color('#cbd5e1')
 
     # Rentang Y yang nyaman dibaca
-    max_y = max(8.0, df["minus_log_p"].max() * 1.12)
+    max_thresh_line = max(sig_line, sug_line)
+    max_y = max(max_thresh_line + 0.8, df["minus_log_p"].max() * 1.15, 6.0)
     ax.set_ylim(0, max_y)
 
     display_title = title.replace('_', ' ').title()
@@ -197,7 +226,13 @@ def _qq(df: pd.DataFrame, out_path: str, title: str) -> float:
     ax.set_ylabel(r"Observed $-\log_{10}(P)$", fontsize=9.5, fontweight='bold', color="#334155", labelpad=6)
 
     # Badge indikator Lambda GC
-    lam_status = "Terkontrol Baik" if 0.95 <= lam <= 1.08 else ("Sedang" if 1.08 < lam <= 1.15 else "Ada Inflasi")
+    if lam < 1.05:
+        lam_status = "Terkontrol Baik"
+    elif 1.05 <= lam <= 1.10:
+        lam_status = "Inflasi Ringan"
+    else:
+        lam_status = "Ada Inflasi"
+
     badge_text = f"$\\lambda_{{GC}} = {lam:.3f}$\n({lam_status})"
     ax.text(
         0.05, 0.92, badge_text,
@@ -215,11 +250,11 @@ def _qq(df: pd.DataFrame, out_path: str, title: str) -> float:
     return lam
 
 
-def run_parsing_and_rendering(glm_files: list[str], job_dir: str):
+def run_parsing_and_rendering(glm_files: list[str], job_dir: str, m_eff: Optional[int] = None):
     """
     Menghasilkan berkas yang dibutuhkan endpoint download & results:
       - gwas_raw_summary.tsv  (semua SNP, hasil mentah)
-      - gwas_summary.csv      (Top 10 SNP signifikan)
+      - gwas_summary.csv      (SNP signifikan berdasarkan sig_threshold = 0.05 / m_eff atau Top 10)
       - manhattan_plot.png, qq_plot.png
     """
     generated = []
@@ -235,19 +270,34 @@ def run_parsing_and_rendering(glm_files: list[str], job_dir: str):
             log_job(job_dir, f"[Visualisasi] Berkas {os.path.basename(glm_file)} tidak memiliki p-value valid (semua NA/kosong/kolinier). Melewati.", "WARN")
             continue
 
-        log_job(job_dir, f"[Visualisasi] Membuat plot Manhattan & QQ untuk fenotipe: '{pheno_name}' ({len(df)} SNP valid).")
-        _manhattan(df, os.path.join(job_dir, f"manhattan_{pheno_name}.png"), pheno_name)
+        n_snps = len(df)
+        eff_markers = m_eff if (m_eff and m_eff > 0) else n_snps
+        sig_thresh = 0.05 / eff_markers if eff_markers > 0 else 5e-8
+        sug_thresh = 1.0 / eff_markers if eff_markers > 0 else 1e-5
+
+        log_job(
+            job_dir,
+            f"[Visualisasi] Membuat plot Manhattan & QQ untuk fenotipe: '{pheno_name}' "
+            f"({n_snps} SNP valid, m_eff={eff_markers}, sig_thresh={sig_thresh:.2e}, sug_thresh={sug_thresh:.2e})."
+        )
+        _manhattan(df, os.path.join(job_dir, f"manhattan_{pheno_name}.png"), pheno_name, sig_threshold=sig_thresh, suggestive_threshold=sug_thresh)
         _qq(df, os.path.join(job_dir, f"qq_{pheno_name}.png"), pheno_name)
         generated.append(pheno_name)
 
         if not primary_done:
             primary_done = True
-            _manhattan(df, os.path.join(job_dir, "manhattan_plot.png"), pheno_name)
+            _manhattan(df, os.path.join(job_dir, "manhattan_plot.png"), pheno_name, sig_threshold=sig_thresh, suggestive_threshold=sug_thresh)
             _qq(df, os.path.join(job_dir, "qq_plot.png"), pheno_name)
 
             df.to_csv(os.path.join(job_dir, "gwas_raw_summary.tsv"), sep="\t", index=False)
 
-            top = df.nsmallest(TOP_N, "P")
+            # Filter SNP signifikan (P <= sig_thresh). Jika tidak ada / sedikit, sediakan minimal Top 10
+            sig_df = df[df["P"] <= sig_thresh]
+            if len(sig_df) < TOP_N:
+                top = df.nsmallest(TOP_N, "P")
+            else:
+                top = sig_df.sort_values("P")
+
             summary = pd.DataFrame({
                 "snp_id": top["ID"],
                 "chrom": top["CHROM"],
@@ -258,7 +308,7 @@ def run_parsing_and_rendering(glm_files: list[str], job_dir: str):
                 "p_value": top["P"],
             })
             summary.to_csv(os.path.join(job_dir, "gwas_summary.csv"), index=False)
-            log_job(job_dir, f"[Visualisasi] Plot utama dan ringkasan gwas_summary.csv berhasil dibuat untuk '{pheno_name}'.")
+            log_job(job_dir, f"[Visualisasi] Plot utama dan ringkasan gwas_summary.csv berhasil dibuat untuk '{pheno_name}' ({len(summary)} SNP dicatat).")
 
     if not primary_done:
         err = (
@@ -331,8 +381,8 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
     story = []
 
     # 1. HEADER BRANDING & DOKUMEN
-    story.append(Paragraph("Jiwasku — Laporan Hasil Analisis GWAS", title_style))
-    story.append(Paragraph("Genome-Wide Association Study Analytics • Terintegrasi PLINK 2.0 Engine", subtitle_style))
+    story.append(Paragraph("Jiwasku - Laporan Hasil Analisis GWAS", title_style))
+    story.append(Paragraph("Genome-Wide Association Study Analytics | Terintegrasi PLINK 2.0 Engine", subtitle_style))
 
     # 2. TABEL PARAMETER YANG DIPILIH USER
     story.append(Paragraph("Konfigurasi Parameter Analisis", section_style))
@@ -341,9 +391,52 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
     pheno_display = safe_params.get("pheno_name") or "Semua / Default"
     maf_val = safe_params.get("maf", 0.05)
     call_rate_raw = safe_params.get("call_rate", 0.95)
+    call_rate_ind_raw = safe_params.get("call_rate_ind", 0.90)
     call_rate_display = f"{int(call_rate_raw * 100)}%" if call_rate_raw <= 1.0 else f"{call_rate_raw}%"
+    call_rate_ind_display = f"{int(call_rate_ind_raw * 100)}%" if call_rate_ind_raw <= 1.0 else f"{call_rate_ind_raw}%"
     num_pcs_val = safe_params.get("num_pcs", 10)
     current_time_str = datetime.now().strftime("%d %B %Y, %H:%M WIB")
+
+    # Hitung jumlah SNP lolos QC dan m_eff
+    num_snps = safe_params.get("num_snps")
+    m_eff = safe_params.get("m_eff")
+
+    if not num_snps:
+        bim_file = os.path.join(job_dir, "qc_clean.bim")
+        if os.path.exists(bim_file):
+            try:
+                with open(bim_file, "r") as bf:
+                    num_snps = sum(1 for _ in bf)
+            except Exception:
+                num_snps = None
+
+    if not m_eff:
+        prune_file = os.path.join(job_dir, "qc_pruned.prune.in")
+        if os.path.exists(prune_file):
+            try:
+                with open(prune_file, "r") as pf:
+                    m_eff = sum(1 for line in pf if line.strip())
+            except Exception:
+                m_eff = num_snps
+        else:
+            m_eff = num_snps
+
+    eff_markers = m_eff if (m_eff and m_eff > 0) else (num_snps if num_snps else 0)
+
+    if eff_markers > 0:
+        num_snps_str = f"{num_snps:,} varian" if num_snps else "N/A"
+        meff_str = f"{eff_markers:,} marker"
+        sig_threshold = 0.05 / eff_markers
+        sig_str = f"{sig_threshold:.2e} (0.05/{eff_markers:,})"
+        suggestive_threshold = 1.0 / eff_markers
+        sug_str = f"{suggestive_threshold:.2e} (1/{eff_markers:,})"
+    else:
+        num_snps_str = "N/A"
+        meff_str = "N/A"
+        sig_threshold = 5e-8
+        sig_str = "5.00e-08"
+        suggestive_threshold = 1e-5
+        sug_str = "1.00e-05"
 
     param_table_data = [
         [
@@ -354,15 +447,27 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
         ],
         [
             Paragraph("Ambang MAF:", cell_bold_style),
-            Paragraph(f"{maf_val} (Varian Langka)", cell_style),
-            Paragraph("Call Rate:", cell_bold_style),
-            Paragraph(f"{call_rate_display} (Missingness)", cell_style),
+            Paragraph(f"&gt;= {maf_val} (Varian Umum)", cell_style),
+            Paragraph("Call Rate SNP / Ind:", cell_bold_style),
+            Paragraph(f"{call_rate_display} / {call_rate_ind_display}", cell_style),
         ],
         [
             Paragraph("Principal Components:", cell_bold_style),
             Paragraph(f"{num_pcs_val} PCs (Stratifikasi)", cell_style),
-            Paragraph("Software Engine:", cell_bold_style),
-            Paragraph("PLINK 2.0 (--glm)", cell_style),
+            Paragraph("Total SNP Lolos QC:", cell_bold_style),
+            Paragraph(num_snps_str, cell_style),
+        ],
+        [
+            Paragraph("Indep. Markers (M_eff):", cell_bold_style),
+            Paragraph(meff_str, cell_style),
+            Paragraph("Ambang Signifikan (Merah):", cell_bold_style),
+            Paragraph(f"<font color='#dc2626'><b>{sig_str}</b></font>", cell_style),
+        ],
+        [
+            Paragraph("Ambang Sugestif (Biru):", cell_bold_style),
+            Paragraph(f"<font color='#2563eb'><b>{sug_str}</b></font>", cell_style),
+            Paragraph("Ref. Standar Genomik:", cell_bold_style),
+            Paragraph("5.00e-08 (10<sup>-8</sup>)", cell_style),
         ],
         [
             Paragraph("Waktu Selesai:", cell_bold_style),
@@ -372,13 +477,13 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
         ]
     ]
 
-    param_table = Table(param_table_data, colWidths=[100, 160, 100, 163])
+    param_table = Table(param_table_data, colWidths=[115, 145, 115, 148])
     param_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f8fafc')),
         ('BOX', (0, 0), (-1, -1), 0.8, colors.HexColor('#cbd5e1')),
         ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 3.5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3.5),
         ('LEFTPADDING', (0, 0), (-1, -1), 6),
         ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ]))
@@ -386,9 +491,14 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
     story.append(Spacer(1, 10))
 
     # 3. TABEL TOP SIGNIFICANT SNPs
-    story.append(Paragraph("Daftar Top 10 Varian SNP Paling Signifikan", section_style))
+    story.append(Paragraph("Daftar Varian SNP Paling Signifikan", section_style))
 
     summary_csv = os.path.join(job_dir, "gwas_summary.csv")
+    has_sig = False
+    has_suggestive = False
+    has_gwas_std = False
+    top_p_formatted = "N/A"
+
     if os.path.exists(summary_csv):
         try:
             top_df = pd.read_csv(summary_csv).head(TOP_N)
@@ -397,9 +507,22 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
 
             for idx, r in top_df.iterrows():
                 p_num = float(r["p_value"])
-                p_text = f"<b>{p_num:.2e}</b>" if p_num < 0.0001 else f"{p_num:.5f}"
-                if p_num < GWAS_THRESHOLD:
-                    p_text = f"<font color='#d97706'>{p_text} *</font>"
+                p_formatted = f"{p_num:.2e}"
+                if idx == 0:
+                    top_p_formatted = p_formatted
+
+                # Penandaan visual: Merah (*) untuk sig_threshold, Biru (+) untuk suggestive_threshold
+                if p_num <= sig_threshold:
+                    has_sig = True
+                    p_cell_content = f"<font color='#dc2626'><b>{p_formatted} *</b></font>"
+                elif p_num <= suggestive_threshold:
+                    has_suggestive = True
+                    p_cell_content = f"<font color='#2563eb'><b>{p_formatted} +</b></font>"
+                else:
+                    p_cell_content = p_formatted
+
+                if p_num <= GWAS_THRESHOLD:
+                    has_gwas_std = True
 
                 eff_val = r.get("effect")
                 eff_text = f"{float(eff_val):.4f}" if pd.notna(eff_val) else "-"
@@ -412,7 +535,7 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
                     Paragraph(str(r.get('pos', '')), cell_style),
                     Paragraph(allele_text, cell_style),
                     Paragraph(eff_text, cell_style),
-                    Paragraph(p_text, cell_style),
+                    Paragraph(p_cell_content, cell_style),
                 ]
                 snp_table_data.append(row)
 
@@ -428,7 +551,38 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
                 ('RIGHTPADDING', (0, 0), (-1, -1), 5),
             ]))
             story.append(snp_table)
-            story.append(Paragraph("<font color='#d97706'>*</font> Menunjukkan varian yang melampaui ambang signifikansi genomik standar (P &lt; 5 &times; 10<sup>-8</sup>).", caption_style))
+
+            # Catatan kaki bersyarat & legenda tanda yang jelas
+            footnotes = []
+            if has_sig:
+                footnotes.append(
+                    f"<font color='#dc2626'>*</font> Menunjukkan varian yang melampaui ambang signifikansi genome-wide dinamis "
+                    f"(P &lt;= {sig_threshold:.2e}, berbasis 0.05/M_eff)."
+                )
+            else:
+                footnotes.append(
+                    f"Tidak ada varian yang melampaui ambang signifikansi genome-wide dinamis (P &lt;= {sig_threshold:.2e}). "
+                    f"Varian teratas: P = {top_p_formatted}."
+                )
+
+            if has_suggestive:
+                footnotes.append(
+                    f"<font color='#2563eb'>+</font> Menunjukkan varian yang mencapai ambang sugestif dinamis "
+                    f"(P &lt;= {suggestive_threshold:.2e}, berbasis 1/M_eff)."
+                )
+
+            if has_gwas_std:
+                footnotes.append(
+                    "Varian teratas juga melampaui ambang genome-wide standar konvensional (P &lt; 5 &times; 10<sup>-8</sup>)."
+                )
+            else:
+                footnotes.append(
+                    "Sebagai pembanding, belum ada varian yang mencapai ambang genome-wide standar konvensional (P &lt; 5 &times; 10<sup>-8</sup>)."
+                )
+
+            for fn in footnotes:
+                story.append(Paragraph(fn, caption_style))
+
         except Exception as e:
             story.append(Paragraph(f"Catatan: Gagal memuat ringkasan SNP ({str(e)})", caption_style))
     else:
@@ -446,7 +600,28 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
         story.append(Spacer(1, 4))
         # Lebar disesuaikan dengan lebar area cetak halaman A4 (~523 pt)
         story.append(Image(manhattan_path, width=520, height=210))
-        story.append(Paragraph("Garis putus-putus kuning menunjukkan ambang batas signifikansi genomik (P = 5 &times; 10<sup>-8</sup>). Titik-titik di atas garis tersebut merupakan kandidat lokus genetik asosiasi kuat.", caption_style))
+        
+        # Caption bersyarat untuk Manhattan Plot
+        if has_sig:
+            manhattan_caption = (
+                f"Garis solid merah menunjukkan ambang signifikansi genome-wide dinamis (P = {sig_threshold:.2e}, -log10(P) = {-np.log10(sig_threshold):.2f}, berbasis 0.05/M_eff), "
+                f"dan garis putus-putus biru menunjukkan ambang sugestif (P = {suggestive_threshold:.2e}, berbasis 1/M_eff). "
+                "Titik-titik merah di atas garis merah merupakan varian kandidat dengan signifikansi asosiasi kuat."
+            )
+        elif has_suggestive:
+            manhattan_caption = (
+                f"Garis solid merah menunjukkan ambang signifikansi dinamis (P = {sig_threshold:.2e}), "
+                f"dan garis putus-putus biru menunjukkan ambang sugestif (P = {suggestive_threshold:.2e}). "
+                f"Tidak ada varian yang melampaui ambang genome-wide dinamis; varian teratas mencapai ambang sugestif (P = {top_p_formatted})."
+            )
+        else:
+            manhattan_caption = (
+                f"Garis solid merah menunjukkan ambang signifikansi dinamis (P = {sig_threshold:.2e}), "
+                f"dan garis putus-putus biru menunjukkan ambang sugestif (P = {suggestive_threshold:.2e}). "
+                f"Tidak ada varian yang melampaui ambang signifikansi maupun sugestif. Varian teratas memiliki P = {top_p_formatted}."
+            )
+
+        story.append(Paragraph(manhattan_caption, caption_style))
         story.append(Spacer(1, 10))
 
     qq_path = os.path.join(job_dir, "qq_plot.png")
@@ -454,7 +629,50 @@ def generate_pdf_report(result_id: str, job_dir: str, params: Optional[dict] = N
         story.append(Paragraph("<b>2. Quantile-Quantile (QQ) Plot (Evaluasi Inflasi Genomik)</b>", cell_bold_style))
         story.append(Spacer(1, 4))
         story.append(Image(qq_path, width=270, height=245))
-        story.append(Paragraph("Garis diagonal putus-putus menunjukkan distribusi null teoritis tanpa efek genetik. Nilai faktor inflasi (Lambda GC) mendekati 1.00 menunjukkan stratifikasi populasi telah terkoreksi dengan baik oleh Principal Components (PCA).", caption_style))
+
+        # Hitung lambda GC untuk caption bersyarat
+        lam_val = None
+        raw_tsv = os.path.join(job_dir, "gwas_raw_summary.tsv")
+        if os.path.exists(raw_tsv):
+            try:
+                raw_df = pd.read_csv(raw_tsv, sep="\t")
+                if "P" in raw_df.columns:
+                    valid_p = raw_df["P"].dropna()
+                    valid_p = valid_p[(valid_p > 0) & (valid_p <= 1)]
+                    if not valid_p.empty:
+                        med_p = float(np.median(valid_p))
+                        med_chisq = NormalDist().inv_cdf(1 - med_p / 2) ** 2
+                        lam_val = med_chisq / 0.4549364
+            except Exception:
+                lam_val = None
+
+        if lam_val is not None:
+            if lam_val < 1.05:
+                qq_caption = (
+                    f"Garis diagonal putus-putus menunjukkan distribusi null teoritis (y = x). "
+                    f"Nilai faktor inflasi genomik Lambda GC = {lam_val:.3f} (&lt; 1.05) menunjukkan bahwa struktur dan stratifikasi populasi "
+                    "telah terkendali dengan sangat baik oleh komponen utama (PCA)."
+                )
+            elif 1.05 <= lam_val <= 1.10:
+                qq_caption = (
+                    f"Garis diagonal putus-putus menunjukkan distribusi null teoritis (y = x). "
+                    f"Nilai faktor inflasi genomik Lambda GC = {lam_val:.3f} (1.05 - 1.10) mengindikasikan adanya inflasi ringan, "
+                    "namun model asosiasi masih berada dalam batas toleransi yang wajar."
+                )
+            else:
+                qq_caption = (
+                    f"Garis diagonal putus-putus menunjukkan distribusi null teoritis (y = x). "
+                    f"Nilai faktor inflasi genomik Lambda GC = {lam_val:.3f} (&gt; 1.10) mengindikasikan adanya inflasi sistematik "
+                    "(kemungkinan akibat stratifikasi populasi yang tersisa, kekerabatan/kriptik kinship yang kuat, atau sifat poligenik). "
+                    "Disarankan untuk mempertimbangkan penambahan jumlah PC atau menerapkan matriks kekerabatan (kinship matrix / mixed model)."
+                )
+        else:
+            qq_caption = (
+                "Garis diagonal putus-putus menunjukkan distribusi null teoritis (y = x). "
+                "Nilai faktor inflasi genomik (Lambda GC) mengevaluasi deviasi observasi terhadap ekspektasi null untuk mendeteksi stratifikasi populasi."
+            )
+
+        story.append(Paragraph(qq_caption, caption_style))
 
     doc.build(story)
     log_job(job_dir, f"[Laporan PDF] Berkas laporan lengkap berhasil dibuat: {os.path.basename(pdf_path)}")
