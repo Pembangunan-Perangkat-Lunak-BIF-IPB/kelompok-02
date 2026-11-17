@@ -31,8 +31,8 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
   callRate,
   onCallRateChange,
 }) => {
-  const currentCallRateSnp = callRateSnp ?? callRate ?? 0
-  const currentCallRateIndiv = callRateIndiv ?? callRate ?? 0
+  const currentCallRateSnp = callRateSnp ?? callRate ?? 95
+  const currentCallRateIndiv = callRateIndiv ?? callRate ?? 90
 
   // MAF State & Sync
   const [prevMaf, setPrevMaf] = useState(maf)
@@ -363,7 +363,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
           }`}>
             <Check className="w-2.5 h-2.5 stroke-[3]" />
           </div>
-          <span>Hardy-Weinberg Equilibrium (HWE &gt; 1e-6)</span>
+          <span>Kontrol Kualitas Genomik (QC Call Rate &amp; MAF)</span>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold">
           <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all duration-300 shrink-0 ${
@@ -371,7 +371,7 @@ export const ParameterConfig: React.FC<ParameterConfigProps> = ({
           }`}>
             <Check className="w-2.5 h-2.5 stroke-[3]" />
           </div>
-          <span>Linear Mixed Model (LMM & Association Regression)</span>
+          <span>Stratifikasi Populasi (PCA) &amp; Uji Asosiasi Regresi</span>
         </div>
       </div>
     </div>

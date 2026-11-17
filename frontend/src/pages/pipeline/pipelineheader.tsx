@@ -26,7 +26,7 @@ export const PipelineHeader: React.FC<PipelineHeaderProps> = ({ currentStep }) =
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-900">Step 1: Unggah Dataset</h4>
-            <p className="text-[11px] text-slate-500">Genotipe (.vcf) & Fenotipe (.csv)</p>
+            <p className="text-[11px] text-slate-500">Genotipe (.vcf / PLINK) & Fenotipe (.csv)</p>
           </div>
         </div>
 

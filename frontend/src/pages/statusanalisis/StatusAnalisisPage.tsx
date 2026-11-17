@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Clock, ChevronRight, AlertCircle, Search, Info, Terminal, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, ChevronRight, AlertCircle, Search, Info, Terminal, Download, ChevronDown, ChevronUp, WifiOff, RefreshCw } from 'lucide-react';
+import gsap from 'gsap';
 import { StatusNavbar } from './StatusNavbar';
 import { ResultIdCard } from './ResultIdCard';
 import { PipelineStepper } from './PipelineStepper';
@@ -34,6 +35,8 @@ export const StatusAnalisisPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [notFound, setNotFound] = useState<boolean>(false);
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
+  const [retryTrigger, setRetryTrigger] = useState<number>(0);
   const [parameters, setParameters] = useState<{
     maf?: number;
     call_rate?: number;
@@ -46,12 +49,43 @@ export const StatusAnalisisPage: React.FC = () => {
   // Search Bar State saat ID tidak ditemukan / ingin cari ID lain
   const [searchInput, setSearchInput] = useState<string>('');
 
-  // Ref untuk mengendalikan polling interval
+  // Ref untuk mengendalikan polling interval & animasi GSAP
   const pollTimerRef = useRef<number | null>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+
+  // GSAP Smooth Entrance Animation
+  useEffect(() => {
+    if (!pageRef.current) return;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
+    const ctx = gsap.context(() => {
+      gsap.from('.gsap-header-anim', {
+        y: -16,
+        opacity: 0,
+        duration: 0.6,
+        ease: 'power2.out',
+      });
+      gsap.from('.gsap-card-anim', {
+        y: 22,
+        opacity: 0,
+        scale: 0.99,
+        duration: 0.65,
+        stagger: 0.12,
+        delay: 0.1,
+        ease: 'power3.out',
+      });
+    }, pageRef);
+
+    return () => ctx.revert();
+  }, []);
 
   // Fetch Status Real-time dari Backend saat ada job aktif
   useEffect(() => {
-    if (!hasJob || !cleanJobId) return;
+    if (!hasJob || !cleanJobId) {
+      setIsBackendConnected(null);
+      return;
+    }
 
     let isSubscribed = true;
 
@@ -62,6 +96,7 @@ export const StatusAnalisisPage: React.FC = () => {
         if (!isSubscribed) return;
 
         const data = response.data;
+        setIsBackendConnected(true);
         setNotFound(false);
         setOverallProgress(data.overall_progress ?? 0);
         if (data.parameters) {
@@ -127,10 +162,19 @@ export const StatusAnalisisPage: React.FC = () => {
       } catch (err: any) {
         if (!isSubscribed) return;
         if (err.response?.status === 404) {
+          setIsBackendConnected(true);
           setNotFound(true);
           setErrorMessage(`Result ID #${cleanJobId} tidak ditemukan pada server database.`);
+          setCurrentPhaseName('Result ID Tidak Ditemukan');
         } else {
-          setErrorMessage('Gagal menghubungi server Backend di port 8000.');
+          // Server offline / network error / koneksi terputus
+          setIsBackendConnected(false);
+          setNotFound(false);
+          setErrorMessage('Gagal menghubungi server Backend di port 8000. Pastikan server backend sedang aktif.');
+          setCurrentPhaseName('Koneksi Terputus: Menunggu Server Backend Aktif...');
+          
+          // Polling ulang tiap 4 detik agar otomatis pulih saat backend menyala
+          pollTimerRef.current = window.setTimeout(fetchStatus, 4000);
         }
       } finally {
         if (isSubscribed) setIsSyncing(false);
@@ -145,7 +189,7 @@ export const StatusAnalisisPage: React.FC = () => {
         clearTimeout(pollTimerRef.current);
       }
     };
-  }, [cleanJobId, hasJob]);
+  }, [cleanJobId, hasJob, retryTrigger]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,10 +204,10 @@ export const StatusAnalisisPage: React.FC = () => {
         {/* Floating Navbar */}
         <StatusNavbar />
 
-        {/* Content Container */}
-        <div className="mx-auto max-w-4xl px-4 mt-6">
+        {/* Content Container with GSAP Ref */}
+        <div ref={pageRef} className="mx-auto max-w-4xl px-4 mt-6">
           {/* Breadcrumb & Title Row */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <div className="gsap-header-anim flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div>
               <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1.5">
                 <Link to="/pipeline" className="hover:text-cyan-700 transition-colors font-medium">
@@ -176,10 +220,28 @@ export const StatusAnalisisPage: React.FC = () => {
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                   Status Analisis GWAS
                 </h1>
-                {hasJob && !notFound && (
+                {hasJob && isBackendConnected === true && !notFound && (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200 shadow-2xs">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                     Terhubung Server Backend
+                  </span>
+                )}
+                {hasJob && isBackendConnected === false && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-800 border border-red-200 shadow-2xs">
+                    <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                    Server Backend Terputus
+                  </span>
+                )}
+                {hasJob && isBackendConnected === null && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 border border-amber-200 shadow-2xs">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    Menghubungkan Backend...
+                  </span>
+                )}
+                {hasJob && notFound && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 border border-amber-200 shadow-2xs">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    ID Tidak Ditemukan
                   </span>
                 )}
                 {!hasJob && (
@@ -198,9 +260,47 @@ export const StatusAnalisisPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Banner Server Backend Terputus / Offline */}
+          {hasJob && isBackendConnected === false && (
+            <div className="gsap-card-anim mb-6 rounded-2xl border border-red-200 bg-red-50/90 p-5 shadow-xs animate-shake">
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shrink-0 mt-0.5 shadow-2xs">
+                  <WifiOff className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-extrabold text-red-950">
+                      Gagal Terhubung ke Server Backend
+                    </h3>
+                    <span className="text-[10px] bg-red-200/80 text-red-900 font-bold px-2 py-0.5 rounded font-mono">
+                      Port 8000 Offline
+                    </span>
+                  </div>
+                  <p className="text-xs text-red-800/90 mt-1 leading-relaxed">
+                    Aplikasi tidak dapat menghubungi backend di <code className="bg-red-100/80 px-1 py-0.5 rounded font-mono text-[11px] font-bold">http://localhost:8000</code>. Pastikan server backend Anda sedang aktif agar status analisis dapat disinkronkan.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setRetryTrigger((c) => c + 1)}
+                      disabled={isSyncing}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-3.5 py-1.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                      <span>{isSyncing ? 'Menghubungkan...' : 'Coba Hubungkan Ulang'}</span>
+                    </button>
+                    <span className="text-[11px] text-red-600 font-medium">
+                      Mencoba menyambung ulang otomatis tiap 4 detik...
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Banner ID Tidak Ditemukan (404) */}
           {notFound && (
-            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/90 p-5 shadow-xs animate-pop-out">
+            <div className="gsap-card-anim mb-6 rounded-2xl border border-amber-200 bg-amber-50/90 p-5 shadow-xs animate-pop-out">
               <div className="flex items-start gap-3.5">
                 <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
                 <div className="flex-1">
@@ -234,7 +334,7 @@ export const StatusAnalisisPage: React.FC = () => {
 
           {/* Banner Informasi Inaktif jika user belum menjalankan analisis dari Pipeline */}
           {!hasJob && (
-            <div className="mb-6 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/80 via-white to-sky-50/50 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="gsap-card-anim mb-6 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/80 via-white to-sky-50/50 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-start gap-3.5">
                 <div className="w-9 h-9 rounded-xl bg-cyan-100/90 flex items-center justify-center text-cyan-800 shrink-0 mt-0.5 shadow-2xs">
                   <Info className="w-4 h-4" />
@@ -244,7 +344,7 @@ export const StatusAnalisisPage: React.FC = () => {
                     Belum Ada Analisis yang Berjalan
                   </h3>
                   <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                    Halaman ini akan otomatis menyinkronkan status komputasi real-time setelah Anda mengunggah dataset genotipe & fenotipe lalu menekan tombol Mulai Analisis di menu Pipeline.
+                    Halaman ini akan otomatis menyinkronkan status komputasi real-time setelah Anda mengunggah dataset genotipe &amp; fenotipe lalu menekan tombol Mulai Analisis di menu Pipeline.
                   </p>
                 </div>
               </div>
@@ -259,18 +359,20 @@ export const StatusAnalisisPage: React.FC = () => {
           )}
 
           {/* Top Result ID & Overall Progress Card */}
-          <ResultIdCard
-            resultId={cleanJobId}
-            progressPercent={overallProgress}
-            currentPhaseName={currentPhaseName}
-            isFailed={isFailed}
-            hasJob={hasJob && !notFound}
-            phenoName={parameters?.pheno_name}
-          />
+          <div className="gsap-card-anim">
+            <ResultIdCard
+              resultId={cleanJobId}
+              progressPercent={overallProgress}
+              currentPhaseName={currentPhaseName}
+              isFailed={isFailed}
+              hasJob={hasJob && !notFound}
+              phenoName={parameters?.pheno_name}
+            />
+          </div>
 
           {/* Banner Peringatan Analisis Gagal */}
           {hasJob && isFailed && (
-            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50/90 p-5 shadow-xs animate-fade-in">
+            <div className="gsap-card-anim mt-4 rounded-2xl border border-red-200 bg-red-50/90 p-5 shadow-xs animate-fade-in">
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                 <div className="flex-1">
@@ -304,16 +406,18 @@ export const StatusAnalisisPage: React.FC = () => {
           )}
 
           {/* Main GWAS Pipeline Stepper Card */}
-          <PipelineStepper
-            steps={liveSteps}
-            syncIntervalSeconds={3}
-            isSyncing={isSyncing}
-            hasJob={hasJob && !notFound}
-          />
+          <div className="gsap-card-anim">
+            <PipelineStepper
+              steps={liveSteps}
+              syncIntervalSeconds={3}
+              isSyncing={isSyncing}
+              hasJob={hasJob && !notFound}
+            />
+          </div>
 
           {/* Real-time Backend Log Console */}
           {hasJob && !notFound && (
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+            <div className="gsap-card-anim mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
               <div className="flex items-center justify-between">
                 <button
                   type="button"
@@ -359,12 +463,14 @@ export const StatusAnalisisPage: React.FC = () => {
           )}
 
           {/* Bottom Action Bar */}
-          <ActionBar
-            isCompleted={isCompleted}
-            resultId={cleanJobId}
-            isFailed={isFailed}
-            hasJob={hasJob && !notFound}
-          />
+          <div className="gsap-card-anim">
+            <ActionBar
+              isCompleted={isCompleted}
+              resultId={cleanJobId}
+              isFailed={isFailed}
+              hasJob={hasJob && !notFound}
+            />
+          </div>
 
           {/* Optional Search ID Bar di Bawah jika belum ada job */}
           {!hasJob && (

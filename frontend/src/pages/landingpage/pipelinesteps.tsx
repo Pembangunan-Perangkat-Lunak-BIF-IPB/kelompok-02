@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
-import { Filter, Sliders, BarChart3, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 
 interface StepItem {
   stepNumber: string
   title: string
   description: string
-  icon: React.ReactNode
   delay: string
   tags: string[]
 }
@@ -14,24 +13,21 @@ const STEPS_DATA: StepItem[] = [
   {
     stepNumber: 'TAHAP 01',
     title: 'Kontrol Kualitas Genomik',
-    description: 'Penyaringan varian secara real-time dengan parameter call-rate & MAF terstandarisasi serta filtering Hardy-Weinberg.',
-    icon: <Filter className="w-4 h-4" />,
+    description: 'Penyaringan varian secara real-time dengan parameter call-rate SNP, call-rate individu, serta MAF terstandarisasi.',
     delay: '850ms',
-    tags: ['Filter VCF & CSV', 'Call-Rate & MAF QC', 'Hardy-Weinberg Equilibrium'],
+    tags: ['Filter Genotipe & Fenotipe', 'Call-Rate & MAF QC', 'Biallelic Quality Control'],
   },
   {
     stepNumber: 'TAHAP 02',
     title: 'Model Asosiasi Linear / Logistik',
     description: 'Penyesuaian kovariat dan struktur populasi berbasis Principal Component Analysis (PCA) berkecepatan tinggi.',
-    icon: <Sliders className="w-4 h-4" />,
     delay: '1000ms',
     tags: ['PCA Stratifikasi Populasi', 'Kovariat Klinis', 'Model Linear & Logistik'],
   },
   {
     stepNumber: 'TAHAP 03',
     title: 'Visualisasi Manhattan & QQ-Plot',
-    description: 'Eksplorasi interaktif lokus signifikan genomik p-value < 5×10⁻⁸ instan dengan ekspor data publikasi ilmiah.',
-    icon: <BarChart3 className="w-4 h-4" />,
+    description: 'Eksplorasi interaktif lokus signifikan genomik p-value < 0.05/Meff dengan ekspor data publikasi ilmiah.',
     delay: '1150ms',
     tags: ['Manhattan Plot Interaktif', 'QQ-Plot (λGC)', 'Ekspor Publikasi Ilmiah'],
   },
@@ -77,7 +73,7 @@ export const PipelineSteps: React.FC = () => {
               style={{ animationDelay: step.delay }}
             >
               <div>
-                {/* Header Step: Badge & Icon */}
+                {/* Header Step: Badge */}
                 <div className="flex items-center justify-between mb-4">
                   <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md font-mono tracking-wider transition-all duration-200 ${
                     isHovered
@@ -86,14 +82,6 @@ export const PipelineSteps: React.FC = () => {
                   }`}>
                     {step.stepNumber}
                   </span>
-
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                    isHovered
-                      ? 'bg-amber-400 text-slate-950 scale-120 rotate-6 shadow-md'
-                      : 'bg-amber-500/10 text-amber-700'
-                  }`}>
-                    {step.icon}
-                  </div>
                 </div>
 
                 {/* Judul Tahap */}
