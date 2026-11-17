@@ -44,8 +44,10 @@ def upload_files_and_run_pipeline(
     call_rate: float = Form(0.95),
     num_pcs: int = Form(10),
     pheno_name: Optional[str] = Form(None),
+    pheno_col: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
+    selected_pheno = pheno_name or pheno_col
     result_id = f"GWAS-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
     
     # 1. Tentukan direktori penyimpanan
@@ -60,21 +62,21 @@ def upload_files_and_run_pipeline(
         "maf": maf, 
         "call_rate": call_rate, 
         "num_pcs": num_pcs,
-        "pheno_name": pheno_name
+        "pheno_name": selected_pheno
     }
     init_analysis_job(result_id, vcf_file.filename, csv_file.filename, params, db)
 
     # 4. Jalankan Pipeline di background, response langsung dikembalikan
     background_tasks.add_task(
         _run_pipeline_background,
-        result_id, vcf_path, csv_path, maf, call_rate, num_pcs, pheno_name
+        result_id, vcf_path, csv_path, maf, call_rate, num_pcs, selected_pheno
     )
 
     return {
         "status": "queued",
         "message": "Pipeline GWAS dimulai.",
         "result_id": result_id,
-        "pheno_name": pheno_name
+        "pheno_name": selected_pheno
     }
 
 
