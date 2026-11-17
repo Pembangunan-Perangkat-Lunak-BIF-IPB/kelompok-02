@@ -14,7 +14,7 @@ export const StatusFooter: React.FC = () => {
           <span className="text-slate-300">|</span>
           <p className="leading-snug">
             © 2026 Jiwasku Pipeline GWAS Terintegrasi. Hak Cipta Dilindungi Undang-Undang.{' '}
-            <span className="hidden md:inline text-slate-400">
+            <span className="hidden md:inline text-slate-500">
               Komputasi GWAS Presisi & Analisis Statistik Poligenik.
             </span>
           </p>

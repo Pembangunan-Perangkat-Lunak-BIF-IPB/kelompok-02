@@ -1,24 +1,10 @@
-import { Search } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { DnaBackground3D } from '../../components/layout/DnaBackground3D'
+import { AppNavbar } from '../../components/layout/AppNavbar'
 
 export const HeroSection = () => {
-  const location = useLocation()
-
-
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/'
-    if (path === '/pipeline') return location.pathname === '/pipeline'
-    if (path.startsWith('/status')) return location.pathname.startsWith('/status')
-    if (path.startsWith('/result')) return location.pathname.startsWith('/result')
-    return location.pathname === path
-  }
-
-
-
-
   return (
-    <section className="relative w-full min-h-[600px] bg-slate-950 text-white overflow-hidden flex flex-col justify-between select-none">
+    <section className="relative w-full min-h-[600px] bg-slate-950 text-white overflow-hidden flex flex-col justify-between">
       {/* 
         1. Background Dasar & Overlay Gelap 
         (Ditaruh di z-0 supaya berada di lapisan paling bawah)
@@ -36,95 +22,41 @@ export const HeroSection = () => {
       </div>
 
       {/* Floating Header Navigation (z-30 agar berada di atas 3D DNA) */}
-      <div className="relative z-30 flex justify-center pt-6 px-4 pointer-events-none animate-fade-in-up">
-        <header className="pointer-events-auto flex items-center justify-between bg-white/90 backdrop-blur-md px-6 py-2.5 rounded-full shadow-lg border border-white/50 w-full max-w-4xl text-slate-800">
-          <Link to="/" className="flex items-center gap-2.5 group cursor-pointer">
-            <img 
-              src="/logo.png" 
-              alt="Logo Jiwasku" 
-              className="w-7 h-7 object-contain rounded-full shadow-xs group-hover:scale-105 transition-transform" 
-            />
-            <span className="font-bold text-base text-slate-900 tracking-tight">Jiwasku</span>
-          </Link>
-
-          {/* Nav Links dengan efek sorot pill aktif */}
-          <nav className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-            <Link 
-              to="/" 
-              className={`px-3.5 py-1.5 rounded-full transition-all ${
-                isActive('/') 
-                  ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 
-                  : 'hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              Home
-            </Link>
-            <Link 
-              to="/pipeline" 
-              className={`px-3.5 py-1.5 rounded-full transition-all ${
-                isActive('/pipeline') 
-                  ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 
-                  : 'hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              Pipeline
-            </Link>
-            <Link 
-              to="/status" 
-              className={`px-3.5 py-1.5 rounded-full transition-all ${
-                isActive('/status') 
-                  ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 
-                  : 'hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              Status Analisis
-            </Link>
-            <Link 
-              to="/result" 
-              className={`px-3.5 py-1.5 rounded-full transition-all ${
-                isActive('/result') 
-                  ? 'bg-amber-500/50 text-slate-900 shadow-sm font-bold border border-amber-500/50' 
-                  : 'hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              Riwayat Analisis
-            </Link>
-          </nav>
-
-          {/* Tombol Cek Riwayat dengan Gradasi Cyan-Amber & Animasi Berjalan */}
-          <button 
-            type="button"
-            onClick={() => {
-              const id = prompt('Masukkan Result ID:')
-              if (id) window.location.href = `/status/${id.replace('#', '')}`
-            }}
-            className="bg-gradient-to-r from-amber-400 via-sky-500 to-cyan-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shadow-md animate-gradient-btn cursor-pointer"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span>Cek Riwayat</span>
-          </button>
-        </header>
+      <div className="relative z-30">
+        <AppNavbar />
       </div>
 
       {/* Hero Content (z-30 agar berada di atas 3D DNA) */}
-      <div className="relative z-30 max-w-4xl mx-auto px-6 text-center mt-12 mb-16 pointer-events-none animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-        <h1 className="text-4xl md:text-5xl font-serif text-white leading-tight font-medium tracking-wide drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+      <div className="relative z-30 max-w-4xl mx-auto px-6 text-center mt-12 mb-16 pointer-events-none">
+        <h1 
+          className="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)] animate-pop-out"
+          style={{ animationDelay: '120ms' }}
+        >
           Jiwasku
         </h1>
-        <h2 className="text-2xl md:text-3xl font-sans font-bold text-white mt-1 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+        <h2 
+          className="text-xl md:text-3xl font-bold text-slate-100 mt-2 tracking-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)] animate-fade-in-up"
+          style={{ animationDelay: '260ms' }}
+        >
           Pipeline Analisis GWAS Terintegrasi End-to-End
         </h2>
-        <p className="text-slate-200 text-xs md:text-sm mt-4 max-w-2xl mx-auto leading-relaxed font-normal drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+        <p 
+          className="text-slate-200/90 text-xs md:text-sm mt-4 max-w-2xl mx-auto leading-relaxed font-normal drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)] animate-fade-in-up"
+          style={{ animationDelay: '400ms' }}
+        >
           Platform komputasi genomik presisi untuk pemetaan variasi genetik, uji asosiasi statistik genomik, dan identifikasi penanda sifat biologis secara end to end dan terstandarisasi.
         </p>
 
-        <div className="mt-8">
-          {/* Tombol Utama dengan Gradasi Cyan-Amber & Animasi Berjalan */}
+        <div 
+          className="mt-8 animate-pop-out"
+          style={{ animationDelay: '550ms' }}
+        >
+          {/* Tombol Utama dengan Gradasi Cyan-Amber, Animasi Shimmer & Pulsing Glow */}
           <Link 
             to="/pipeline" 
-            className="pointer-events-auto inline-block bg-gradient-to-r from-amber-400 via-sky-500 to-cyan-400 border border-slate-800/50 text-slate-950 font-bold text-xs md:text-sm px-8 py-3.5 rounded-full shadow-[0_0_25px_rgba(6,182,212,0.4)] animate-gradient-btn transition-all transform hover:scale-105 hover:-translate-y-0.5 cursor-pointer"
+            className="pointer-events-auto inline-flex items-center gap-2 bg-gradient-to-r from-amber-400 via-sky-500 to-cyan-400 text-slate-950 font-bold text-xs md:text-sm px-8 py-3.5 rounded-full animate-glow-pulse animate-gradient-btn transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-cyan-400 cursor-pointer"
           >
-            Mulai Analisis GWAS
+            <span>Mulai Analisis GWAS</span>
           </Link>
         </div>
       </div>

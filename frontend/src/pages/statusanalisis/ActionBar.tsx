@@ -27,7 +27,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   };
 
   return (
-    <div className="mt-6 flex items-center justify-end rounded-2xl border border-slate-100 bg-white p-3 sm:p-4 shadow-xs">
+    <div className="mt-6 flex items-center justify-end rounded-2xl border border-slate-100 bg-white p-3.5 sm:p-4 shadow-xs">
       {!hasJob ? (
         <button
           type="button"
@@ -41,7 +41,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         <button
           type="button"
           onClick={handleGoToPipeline}
-          className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-red-700 transition-all cursor-pointer"
+          className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-red-700 active:scale-[0.98] transition-all cursor-pointer"
         >
           <RotateCcw className="h-4 w-4" />
           <span>Analisis Terhenti — Ulangi di Pipeline</span>
@@ -50,18 +50,18 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         <button
           type="button"
           disabled
-          className="flex items-center gap-2 rounded-xl bg-[#0B3A60] px-6 py-3 text-xs sm:text-sm font-semibold text-white shadow-xs opacity-95 cursor-not-allowed transition-all"
+          className="flex items-center gap-2.5 rounded-xl border border-slate-700/80 bg-slate-900 px-6 py-3 text-xs sm:text-sm font-semibold text-slate-200 shadow-sm cursor-not-allowed transition-all"
         >
-          <RefreshCw className="h-4 w-4 animate-spin text-white" />
+          <RefreshCw className="h-4 w-4 animate-spin text-amber-400" />
           <span>Menunggu Hasil Analisis...</span>
         </button>
       ) : (
         <button
           type="button"
           onClick={handleGoToResult}
-          className="flex items-center gap-2 rounded-xl bg-amber-400 px-8 py-3 text-xs sm:text-sm font-bold text-slate-900 shadow-md transition-all hover:bg-amber-500 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 px-8 py-3 text-xs sm:text-sm font-extrabold text-slate-950 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
         >
-          <span>Hasil Analisis</span>
+          <span>Lihat Hasil Analisis</span>
           <ArrowRight className="h-4 w-4" />
         </button>
       )}

@@ -20,7 +20,8 @@ export default function ParametersPage() {
 
   // State Parameter GWAS (Default awal diatur ke 0)
   const [maf, setMaf] = useState<number>(0)
-  const [callRate, setCallRate] = useState<number>(0)
+  const [callRateSnp, setCallRateSnp] = useState<number>(0)
+  const [callRateIndiv, setCallRateIndiv] = useState<number>(0)
   const [pca, setPca] = useState<number>(0)
 
   // State Loading & Error saat kirim ke Backend
@@ -77,8 +78,22 @@ export default function ParametersPage() {
     setPhenotypeColumns(sampleCols)
     setSelectedColumn(sampleCols[0])
     setMaf(0)
-    setCallRate(0)
+    setCallRateSnp(0)
+    setCallRateIndiv(0)
     setPca(0)
+    setErrorMsg(null)
+  }
+
+  // Handler Hapus / Reset Berkas Unggahan
+  const handleClearVcf = () => {
+    setVcfFile(null)
+    setErrorMsg(null)
+  }
+
+  const handleClearCsv = () => {
+    setCsvFile(null)
+    setPhenotypeColumns([])
+    setSelectedColumn('')
     setErrorMsg(null)
   }
 
@@ -99,8 +114,13 @@ export default function ParametersPage() {
       formData.append('maf', String(maf))
       
       // Backend meminta float desimal (misal 0.95), sedangkan input UI dalam persen (95)
-      const normalizedCallRate = callRate > 1 ? callRate / 100 : callRate
-      formData.append('call_rate', String(normalizedCallRate))
+      const normalizedCallRateSnp = callRateSnp > 1 ? callRateSnp / 100 : callRateSnp
+      const normalizedCallRateIndiv = callRateIndiv > 1 ? callRateIndiv / 100 : callRateIndiv
+      
+      // Kirim call_rate sebagai fallback kompatibilitas backend
+      formData.append('call_rate', String(normalizedCallRateSnp || 0.95))
+      formData.append('call_rate_snp', String(normalizedCallRateSnp))
+      formData.append('call_rate_indiv', String(normalizedCallRateIndiv))
       formData.append('num_pcs', String(pca))
 
       // Sertakan kolom fenotipe yang dipilih pengguna
@@ -125,14 +145,14 @@ export default function ParametersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50/60 pb-12 font-sans">
+    <main className="min-h-screen bg-slate-50/60 pb-16 font-sans">
       <PipelineNavbar />
       <div className="max-w-5xl mx-auto px-4 mt-4">
         <PipelineHeader currentStep={isReady ? 2 : 1} />
 
         {/* Pesan Error Jika Gagal Upload ke Backend */}
         {errorMsg && (
-          <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2.5">
+          <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2.5 animate-pop-out">
             <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
             <div>
               <span className="font-bold">Gagal Memulai Analisis: </span>
@@ -148,24 +168,34 @@ export default function ParametersPage() {
           onVcfChange={handleVcfChange}
           onCsvChange={handleCsvChange}
           onUseSampleData={handleUseSampleData}
+          onClearVcf={handleClearVcf}
+          onClearCsv={handleClearCsv}
         />
 
-        {/* Step 2: Pilih Kolom Fenotipe */}
-        <ColumnSelect
-          columns={phenotypeColumns}
-          selectedColumn={selectedColumn}
-          onSelectColumn={setSelectedColumn}
-          isActive={isReady}
-        />
+        {/* Step 2: Pilih Kolom Fenotipe (z-30 agar dropdown melayang di atas Step 3) */}
+        <div className="relative z-30">
+          <ColumnSelect
+            columns={phenotypeColumns}
+            selectedColumn={selectedColumn}
+            onSelectColumn={setSelectedColumn}
+            isActive={isReady}
+          />
+        </div>
 
         {/* Step 3: Konfigurasi Parameter GWAS & Kontrol Kualitas */}
-        <div className={`transition-all duration-300 ${!isReady ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`relative z-10 transition-all duration-300 transform ${
+          !isReady 
+            ? 'opacity-50 grayscale-20 scale-[0.99] pointer-events-none' 
+            : 'opacity-100 scale-100'
+        }`}>
           <ParameterConfig
             maf={maf}
-            callRate={callRate}
+            callRateSnp={callRateSnp}
+            callRateIndiv={callRateIndiv}
             pca={pca}
             onMafChange={setMaf}
-            onCallRateChange={setCallRate}
+            onCallRateSnpChange={setCallRateSnp}
+            onCallRateIndivChange={setCallRateIndiv}
             onPcaChange={setPca}
             isActive={isReady}
             stepNumber={3}
@@ -174,29 +204,38 @@ export default function ParametersPage() {
 
         {/* Bottom Execution Bar */}
         <div
-          className={`rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 transition-all ${
-            isReady ? 'bg-cyan-500 text-white shadow-lg' : 'bg-slate-300 text-slate-500'
+          className={`rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 transition-all duration-300 animate-fade-in-up ${
+            isReady 
+              ? 'bg-gradient-to-r from-sky-700 via-cyan-700 to-teal-700 text-white shadow-lg border border-cyan-500/30' 
+              : 'bg-slate-100/90 text-slate-600 border border-slate-200 shadow-2xs'
           }`}
+          style={{ animationDelay: '400ms' }}
         >
           <div className="flex items-center gap-3 pl-2">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 ${
-                isReady ? 'bg-amber-400 text-slate-900' : 'bg-slate-400 text-white'
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0 transition-all duration-300 ${
+                isReady ? 'bg-amber-400 text-slate-950 shadow-xs' : 'bg-slate-200 text-slate-500'
               }`}
             >
               <Clock className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium opacity-90">Estimasi Waktu Komputasi:</span>
-                {isReady && selectedColumn && (
-                  <span className="bg-white/20 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                <span className={`text-xs font-semibold ${isReady ? 'text-slate-100' : 'text-slate-700'}`}>
+                  Estimasi Waktu Komputasi:
+                </span>
+                {isReady && selectedColumn ? (
+                  <span className="bg-white/20 backdrop-blur-xs text-white text-[9px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 animate-pop-out">
                     <Sparkles className="w-2.5 h-2.5" />
                     Target: {selectedColumn}
                   </span>
-                )}
+                ) : !isReady ? (
+                  <span className="text-[10px] text-slate-500 font-medium">(Lengkapi Step 1 & 2 untuk mengaktifkan)</span>
+                ) : null}
               </div>
-              <p className="text-sm font-bold">~5 Menit</p>
+              <p className={`text-sm font-extrabold ${isReady ? 'text-white' : 'text-slate-700'}`}>
+                ~5 Menit (Server HPC)
+              </p>
             </div>
           </div>
 
@@ -204,10 +243,10 @@ export default function ParametersPage() {
             type="button"
             disabled={!isReady || isSubmitting}
             onClick={handleExecute}
-            className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-xs transition-all duration-200 cursor-pointer ${
               isReady && !isSubmitting
-                ? 'bg-amber-400 hover:bg-amber-500 text-slate-900 shadow-md hover:scale-105'
-                : 'bg-slate-400 text-slate-200 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 text-slate-950 shadow-md hover:shadow-lg hover:scale-102 active:scale-95 animate-gradient-btn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300/60'
             }`}
           >
             {isSubmitting ? (
