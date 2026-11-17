@@ -5,7 +5,7 @@ import { Footer } from './landingfooter'
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
+    <main className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased selection:bg-amber-200 selection:text-slate-950">
       <HeroSection />
       <SearchHistory />
       <PipelineSteps />

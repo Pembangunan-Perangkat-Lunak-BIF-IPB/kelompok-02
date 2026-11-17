@@ -28,19 +28,19 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
             Tahapan Pipeline GWAS
           </h2>
           {!hasJob && (
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Tahapan akan otomatis aktif setelah Anda menekan tombol Mulai Analisis di Pipeline
             </p>
           )}
         </div>
         {hasJob ? (
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 w-fit">
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-emerald-50/90 px-3.5 py-1 text-xs font-semibold text-emerald-800 w-fit shadow-2xs">
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>Sinkronisasi Otomatis Tiap {syncIntervalSeconds} Detik</span>
           </div>
         ) : (
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500 w-fit">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3.5 py-1 text-xs font-semibold text-slate-600 w-fit">
+            <Clock className="w-3.5 h-3.5 text-slate-500" />
             <span>Belum Berjalan</span>
           </div>
         )}
@@ -62,11 +62,11 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
                 <div
                   className={`absolute left-4 top-9 -bottom-6 w-0.5 -translate-x-1/2 transition-colors duration-500 ${
                     isFailed
-                      ? 'bg-red-300'
+                      ? 'bg-red-400'
                       : isCompleted
-                      ? 'bg-emerald-300'
+                      ? 'bg-emerald-400'
                       : isRunning
-                      ? 'bg-sky-200'
+                      ? 'bg-gradient-to-b from-sky-400 via-sky-300 to-slate-200'
                       : 'bg-slate-200'
                   }`}
                 />
@@ -75,12 +75,12 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
               {/* Step Node Icon */}
               <div className="relative z-10 shrink-0">
                 {isCompleted && (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xs transition-transform">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xs ring-4 ring-emerald-50 transition-transform">
                     <Check className="h-4 w-4 stroke-[2.5]" />
                   </div>
                 )}
                 {isRunning && (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500 text-white shadow-xs">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-sky-600 text-white shadow-xs ring-4 ring-sky-100">
                     <svg
                       className="h-4 w-4 animate-spin text-white"
                       viewBox="0 0 24 24"
@@ -103,12 +103,12 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
                   </div>
                 )}
                 {isFailed && (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white shadow-xs">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white shadow-xs ring-4 ring-red-100">
                     <X className="h-4 w-4 stroke-[2.5]" />
                   </div>
                 )}
                 {isQueued && (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-200 bg-slate-50 text-slate-400">
                     <Clock className="h-4 w-4" />
                   </div>
                 )}
@@ -118,19 +118,19 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
               <div className="min-w-0 flex-1">
                 {isRunning ? (
                   /* Running Card Highlight */
-                  <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-4 transition-all">
+                  <div className="rounded-xl border border-sky-200/90 bg-gradient-to-r from-sky-50/80 via-white to-sky-50/40 p-4 transition-all shadow-xs">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900 text-sm">
                           {step.title}
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100/90 border border-sky-200/60 px-2.5 py-0.5 text-[11px] font-semibold text-sky-800">
                           <span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-ping inline-block" />
                           Sedang Berjalan
                         </span>
                       </div>
                       {step.iteration && (
-                        <span className="font-mono text-xs font-semibold text-sky-700">
+                        <span className="font-mono text-xs font-semibold text-sky-800 bg-white/80 border border-sky-200/60 rounded-lg px-2 py-0.5">
                           {step.iteration}
                         </span>
                       )}
@@ -138,13 +138,13 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
 
                     {/* Inner Progress Bar */}
                     <div className="mt-3 flex items-center gap-3">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-white border border-sky-100">
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-white border border-sky-200/80 p-0.5">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-500 transition-all duration-500"
+                          className="h-full rounded-full bg-gradient-to-r from-amber-400 via-sky-500 to-cyan-500 transition-all duration-500 shadow-2xs"
                           style={{ width: `${step.progressPercent ?? 50}%` }}
                         />
                       </div>
-                      <span className="text-xs font-bold text-slate-600 font-mono">
+                      <span className="text-xs font-bold text-slate-700 font-mono">
                         {step.progressPercent ?? 50}%
                       </span>
                     </div>
@@ -168,29 +168,29 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
                           {step.title}
                         </span>
                         {isCompleted && (
-                          <span className="rounded-full bg-emerald-100/80 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          <span className="rounded-full bg-emerald-100/80 border border-emerald-200/50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-800">
                             Selesai
                           </span>
                         )}
                         {isFailed && (
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                          <span className="rounded-full bg-red-100 border border-red-200/60 px-2.5 py-0.5 text-[10px] font-semibold text-red-800">
                             Gagal
                           </span>
                         )}
                         {isQueued && (
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                          <span className="rounded-full bg-slate-100 border border-slate-200/60 px-2.5 py-0.5 text-[10px] font-medium text-slate-600">
                             Dalam Antrean
                           </span>
                         )}
                       </div>
                       <div>
                         {isCompleted && step.duration && (
-                          <span className="font-mono text-xs text-slate-400">
+                          <span className="font-mono text-xs text-slate-500 font-medium">
                             Durasi: {step.duration}
                           </span>
                         )}
                         {isQueued && (
-                          <span className="text-xs font-medium text-slate-400">
+                          <span className="text-xs font-medium text-slate-500">
                             Menunggu
                           </span>
                         )}
@@ -199,12 +199,12 @@ export const PipelineStepper: React.FC<PipelineStepperProps> = ({
 
                     {/* Details text */}
                     {isCompleted && step.details && (
-                      <p className="mt-1 text-xs text-slate-500 leading-relaxed font-sans">
+                      <p className="mt-1 text-xs text-slate-600 leading-relaxed font-sans">
                         {step.details}
                       </p>
                     )}
                     {isFailed && step.details && (
-                      <p className="mt-1 text-xs text-red-600 leading-relaxed font-sans">
+                      <p className="mt-1 text-xs text-red-700 leading-relaxed font-sans">
                         {step.details}
                       </p>
                     )}

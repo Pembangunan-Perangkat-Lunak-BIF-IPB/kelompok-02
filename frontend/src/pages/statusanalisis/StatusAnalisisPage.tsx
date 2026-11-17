@@ -165,25 +165,25 @@ export const StatusAnalisisPage: React.FC = () => {
           {/* Breadcrumb & Title Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div>
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <Link to="/pipeline" className="hover:text-cyan-700 transition-colors">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-1.5">
+                <Link to="/pipeline" className="hover:text-cyan-700 transition-colors font-medium">
                   Pipeline Komputasi
                 </Link>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-                <span className="text-cyan-600 font-semibold">Status Analisis</span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-cyan-700 font-bold">Status Analisis</span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                   Status Analisis GWAS
                 </h1>
                 {hasJob && !notFound && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Terhubung Backend
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-200 shadow-2xs">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Terhubung Server Backend
                   </span>
                 )}
                 {!hasJob && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500 border border-slate-200">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 border border-slate-200">
                     Belum Dimulai
                   </span>
                 )}
@@ -191,40 +191,40 @@ export const StatusAnalisisPage: React.FC = () => {
             </div>
 
             {/* Time Estimation Pill */}
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3.5 py-1 text-xs shadow-2xs w-fit">
-              <Clock className="w-3.5 h-3.5 text-cyan-500" />
-              <span className="text-slate-500 font-medium">Est:</span>
-              <span className="text-cyan-600 font-bold">~2 Menit</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white px-4 py-1.5 text-xs shadow-xs w-fit">
+              <Clock className="w-3.5 h-3.5 text-cyan-600" />
+              <span className="text-slate-500 font-medium">Estimasi Waktu:</span>
+              <span className="text-slate-900 font-extrabold font-mono">~2 Menit</span>
             </div>
           </div>
 
           {/* Banner ID Tidak Ditemukan (404) */}
           {notFound && (
-            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/80 p-5 shadow-xs animate-fade-in">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/90 p-5 shadow-xs animate-pop-out">
+              <div className="flex items-start gap-3.5">
+                <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <h3 className="text-sm font-bold text-amber-900">
+                  <h3 className="text-sm font-extrabold text-amber-950">
                     Result ID #{cleanJobId} Tidak Ditemukan
                   </h3>
-                  <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                  <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
                     {errorMessage || 'Sistem tidak menemukan riwayat analisis dengan Result ID tersebut. Silakan masukkan Result ID yang valid atau mulai analisis baru dari halaman Pipeline.'}
                   </p>
 
                   <form onSubmit={handleSearchSubmit} className="mt-4 flex flex-col sm:flex-row items-center gap-2 max-w-md">
                     <input
                       type="text"
-                      placeholder="Masukkan Result ID valid..."
+                      placeholder="Masukkan Result ID valid (contoh: GWAS-...)..."
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
-                      className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full bg-white border border-amber-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs font-medium"
                     />
                     <button
                       type="submit"
-                      className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer shrink-0"
+                      className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-all active:scale-95 shrink-0"
                     >
                       <Search className="w-3.5 h-3.5" />
-                      <span>Cari</span>
+                      <span>Cari ID</span>
                     </button>
                   </form>
                 </div>
@@ -234,23 +234,23 @@ export const StatusAnalisisPage: React.FC = () => {
 
           {/* Banner Informasi Inaktif jika user belum menjalankan analisis dari Pipeline */}
           {!hasJob && (
-            <div className="mb-6 rounded-2xl border border-sky-100 bg-sky-50/70 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 shrink-0 mt-0.5">
+            <div className="mb-6 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/80 via-white to-sky-50/50 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-cyan-100/90 flex items-center justify-center text-cyan-800 shrink-0 mt-0.5 shadow-2xs">
                   <Info className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-extrabold text-slate-900">
                     Belum Ada Analisis yang Berjalan
                   </h3>
-                  <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                    Halaman ini akan otomatis menampilkan progress real-time setelah Anda mengunggah file dataset dan mengklik tombol Mulai Analisis di menu Pipeline.
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    Halaman ini akan otomatis menyinkronkan status komputasi real-time setelah Anda mengunggah dataset genotipe & fenotipe lalu menekan tombol Mulai Analisis di menu Pipeline.
                   </p>
                 </div>
               </div>
               <Link
                 to="/pipeline"
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs px-5 py-2.5 shadow-xs transition-all shrink-0 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-bold text-xs px-5 py-2.5 shadow-xs transition-all shrink-0 cursor-pointer active:scale-95"
               >
                 <span>Buka Menu Pipeline</span>
                 <ChevronRight className="w-3.5 h-3.5" />
