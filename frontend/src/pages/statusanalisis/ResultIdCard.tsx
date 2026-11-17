@@ -7,6 +7,7 @@ interface ResultIdCardProps {
   currentPhaseName: string;
   isFailed?: boolean;
   hasJob?: boolean;
+  phenoName?: string | null;
 }
 
 export const ResultIdCard: React.FC<ResultIdCardProps> = ({
@@ -15,6 +16,7 @@ export const ResultIdCard: React.FC<ResultIdCardProps> = ({
   currentPhaseName,
   isFailed = false,
   hasJob = true,
+  phenoName,
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -74,6 +76,13 @@ export const ResultIdCard: React.FC<ResultIdCardProps> = ({
                   </>
                 )}
               </button>
+            )}
+
+            {hasJob && phenoName && (
+              <span className="inline-flex items-center gap-1 rounded-xl bg-cyan-50/90 px-3 py-1.5 text-xs font-semibold text-cyan-800 border border-cyan-200">
+                <span className="text-cyan-500 font-normal">Fenotipe:</span>
+                <span className="font-bold">{phenoName}</span>
+              </span>
             )}
           </div>
         </div>

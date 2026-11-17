@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-
   Download,
   Copy,
   Check,
@@ -15,6 +14,7 @@ import {
   X,
   Sparkles,
   ArrowRight,
+  FileText,
 } from 'lucide-react';
 import apiClient, { API_BASE_URL } from '../api/client';
 import { StatusNavbar } from './statusanalisis/StatusNavbar';
@@ -33,6 +33,12 @@ interface TopSnp {
 interface ResultsResponse {
   result_id: string;
   status: string;
+  parameters?: {
+    maf?: number;
+    call_rate?: number;
+    num_pcs?: number;
+    pheno_name?: string | null;
+  };
   summary: {
     top_snps: TopSnp[];
   };
@@ -42,6 +48,7 @@ interface ResultsResponse {
     manhattan_png: string;
     qq_png: string;
     report_pdf: string;
+    pipeline_log?: string;
   };
 }
 
@@ -324,6 +331,23 @@ export default function ResultPage() {
                         )}
                       </button>
                     </div>
+
+                    {data.parameters && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        <span className="text-[11px] bg-sky-50 text-cyan-800 px-2.5 py-0.5 rounded-lg font-medium border border-sky-200">
+                          Fenotipe: <strong>{data.parameters.pheno_name || 'Semua Kolom'}</strong>
+                        </span>
+                        <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-medium border border-slate-200">
+                          MAF: <strong>{data.parameters.maf ?? 0.05}</strong>
+                        </span>
+                        <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-medium border border-slate-200">
+                          Call Rate: <strong>{typeof data.parameters.call_rate === 'number' && data.parameters.call_rate <= 1 ? `${(data.parameters.call_rate * 100).toFixed(0)}%` : data.parameters.call_rate}</strong>
+                        </span>
+                        <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg font-medium border border-slate-200">
+                          PCs: <strong>{data.parameters.num_pcs ?? 10}</strong>
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Download Buttons */}
@@ -352,6 +376,16 @@ export default function ResultPage() {
                       <Download className="w-3.5 h-3.5 text-slate-500" />
                       <span>Raw GLM (TSV)</span>
                     </a>
+                    {data.downloads.pipeline_log && (
+                      <a
+                        href={`${API_BASE_URL}${data.downloads.pipeline_log}`}
+                        download={`pipeline_${data.result_id}.log`}
+                        className="flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 text-xs font-semibold transition-all"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Log Pipeline</span>
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

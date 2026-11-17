@@ -50,6 +50,7 @@ def _run_pipeline_background(
 @router.post("/upload", summary="Inisialisasi Pipeline GWAS")
 def upload_files_and_run_pipeline(
     background_tasks: BackgroundTasks,
+<<<<<<< HEAD
     csv_file: UploadFile = File(..., description="Berkas fenotipe format CSV"),
     vcf_file: Optional[UploadFile] = File(None, description="Berkas genotipe VCF (.vcf / .vcf.gz)"),
     bed_file: Optional[UploadFile] = File(None, description="Berkas PLINK biner (.bed)"),
@@ -60,8 +61,18 @@ def upload_files_and_run_pipeline(
     call_rate_ind: float = Form(0.90, description="Call rate individu threshold"),
     num_pcs: int = Form(10, description="Jumlah Principal Components"),
     pheno_name: Optional[str] = Form(None, description="Nama kolom fenotipe target"),
+=======
+    vcf_file: UploadFile = File(...),
+    csv_file: UploadFile = File(...),
+    maf: float = Form(0.05),
+    call_rate: float = Form(0.95),
+    num_pcs: int = Form(10),
+    pheno_name: Optional[str] = Form(None),
+    pheno_col: Optional[str] = Form(None),
+>>>>>>> origin/test/integrasi-fe-be
     db: Session = Depends(get_db)
 ):
+    selected_pheno = pheno_name or pheno_col
     result_id = f"GWAS-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
     
     # 1. Tentukan direktori penyimpanan
@@ -89,14 +100,19 @@ def upload_files_and_run_pipeline(
         "call_rate": call_rate,
         "call_rate_ind": call_rate_ind,
         "num_pcs": num_pcs,
+<<<<<<< HEAD
         "pheno_name": pheno_name,
         "genotype_type": genotype_type
+=======
+        "pheno_name": selected_pheno
+>>>>>>> origin/test/integrasi-fe-be
     }
     init_analysis_job(result_id, genotype_display, csv_file.filename, params, db)
 
     # 4. Jalankan Pipeline di background, response langsung dikembalikan
     background_tasks.add_task(
         _run_pipeline_background,
+<<<<<<< HEAD
         result_id=result_id,
         genotype_path=genotype_path,
         csv_path=csv_path,
@@ -106,14 +122,21 @@ def upload_files_and_run_pipeline(
         pheno_name=pheno_name,
         call_rate_ind=call_rate_ind,
         genotype_type=genotype_type
+=======
+        result_id, vcf_path, csv_path, maf, call_rate, num_pcs, selected_pheno
+>>>>>>> origin/test/integrasi-fe-be
     )
 
     return {
         "status": "queued",
         "message": "Pipeline GWAS dimulai.",
         "result_id": result_id,
+<<<<<<< HEAD
         "pheno_name": pheno_name,
         "genotype_type": genotype_type
+=======
+        "pheno_name": selected_pheno
+>>>>>>> origin/test/integrasi-fe-be
     }
 
 
