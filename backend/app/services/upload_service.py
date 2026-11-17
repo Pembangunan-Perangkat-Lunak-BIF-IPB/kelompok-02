@@ -19,8 +19,11 @@ def validate_and_save_files(
     os.makedirs(job_dir, exist_ok=True)
 
     # 1. Validasi Fenotipe CSV
-    if not csv_file or not csv_file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Berkas fenotipe harus berupa file berekstensi .csv")
+    if not csv_file or not csv_file.filename.lower().endswith(".csv"):
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Format berkas fenotipe ditolak: '{getattr(csv_file, 'filename', '')}'. Sistem hanya menerima berkas berekstensi .csv"
+        )
 
     csv_path = os.path.join(job_dir, csv_file.filename)
     with open(csv_path, "wb") as buffer:
@@ -28,7 +31,7 @@ def validate_and_save_files(
 
     # 2. Cek apakah input berupa PLINK biner (.bed, .bim, .fam)
     has_plink_triplet = bool(bed_file and bim_file and fam_file)
-    has_vcf = bool(vcf_file and (vcf_file.filename.endswith(".vcf") or vcf_file.filename.endswith(".vcf.gz")))
+    has_vcf = bool(vcf_file and (vcf_file.filename.lower().endswith(".vcf") or vcf_file.filename.lower().endswith(".vcf.gz")))
 
     if not has_vcf and not has_plink_triplet:
         raise HTTPException(
@@ -38,12 +41,12 @@ def validate_and_save_files(
 
     if has_plink_triplet:
         # Validasi ekstensi
-        if not bed_file.filename.endswith(".bed"):
-            raise HTTPException(status_code=400, detail="Berkas bed harus berakhiran .bed")
-        if not bim_file.filename.endswith(".bim"):
-            raise HTTPException(status_code=400, detail="Berkas bim harus berakhiran .bim")
-        if not fam_file.filename.endswith(".fam"):
-            raise HTTPException(status_code=400, detail="Berkas fam harus berakhiran .fam")
+        if not bed_file.filename.lower().endswith(".bed"):
+            raise HTTPException(status_code=400, detail=f"Berkas bed ditolak: '{bed_file.filename}' harus berakhiran .bed")
+        if not bim_file.filename.lower().endswith(".bim"):
+            raise HTTPException(status_code=400, detail=f"Berkas bim ditolak: '{bim_file.filename}' harus berakhiran .bim")
+        if not fam_file.filename.lower().endswith(".fam"):
+            raise HTTPException(status_code=400, detail=f"Berkas fam ditolak: '{fam_file.filename}' harus berakhiran .fam")
 
         bed_path = os.path.join(job_dir, bed_file.filename)
         bim_path = os.path.join(job_dir, bim_file.filename)

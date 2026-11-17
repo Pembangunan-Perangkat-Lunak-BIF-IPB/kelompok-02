@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import gsap from 'gsap';
 import {
   Download,
   Copy,
@@ -70,6 +71,35 @@ export default function ResultPage() {
 
   // Search Bar State untuk melacak ID lain
   const [searchIdInput, setSearchIdInput] = useState('');
+  const pageRef = useRef<HTMLDivElement>(null);
+
+  // GSAP Smooth Entrance Animation
+  useEffect(() => {
+    if (!pageRef.current) return;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
+    const ctx = gsap.context(() => {
+      gsap.from('.gsap-res-header', {
+        y: -16,
+        opacity: 0,
+        duration: 0.6,
+        ease: 'power2.out',
+      });
+
+      gsap.from('.gsap-res-card', {
+        y: 22,
+        opacity: 0,
+        scale: 0.99,
+        duration: 0.65,
+        stagger: 0.12,
+        delay: 0.1,
+        ease: 'power3.out',
+      });
+    }, pageRef);
+
+    return () => ctx.revert();
+  }, [data, hasJob, loading]);
 
   useEffect(() => {
     if (!hasJob || !cleanJobId) {
@@ -179,9 +209,9 @@ export default function ResultPage() {
         )}
 
         {/* Content Container */}
-        <div className="mx-auto max-w-5xl px-4 mt-6">
+        <div ref={pageRef} className="mx-auto max-w-5xl px-4 mt-6">
           {/* Breadcrumb & Title */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="gsap-res-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
               <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
                 <Link to="/pipeline" className="hover:text-cyan-700 transition-colors">
@@ -219,7 +249,7 @@ export default function ResultPage() {
 
           {/* Skenario 1: Belum Ada Analisis yang Dipilih/Dijalankan */}
           {!hasJob && (
-            <div className="rounded-3xl border border-slate-200 bg-white p-8 sm:p-12 text-center shadow-xs my-8 animate-fade-in">
+            <div className="gsap-res-card rounded-3xl border border-slate-200 bg-white p-8 sm:p-12 text-center shadow-xs my-8 animate-fade-in">
               <div className="mx-auto w-16 h-16 rounded-full bg-sky-50 flex items-center justify-center text-cyan-600 mb-4">
                 <BarChart3 className="w-8 h-8" />
               </div>
@@ -275,7 +305,7 @@ export default function ResultPage() {
 
           {/* Skenario 3: Terjadi Error / Analisis Belum Selesai */}
           {hasJob && !loading && error && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-6 shadow-xs my-8">
+            <div className="gsap-res-card rounded-2xl border border-amber-200 bg-amber-50/80 p-6 shadow-xs my-8">
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div>
@@ -303,7 +333,7 @@ export default function ResultPage() {
           {hasJob && !loading && data && (
             <>
               {/* Banner ID & Quick Export Bar */}
-              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-xs mb-6">
+              <div className="gsap-res-card rounded-2xl border border-slate-100 bg-white p-5 shadow-xs mb-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
@@ -393,7 +423,7 @@ export default function ResultPage() {
               {/* Grid 2 Visualisasi Manhattan & QQ Plot */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Manhattan Plot Card */}
-                <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-xs flex flex-col justify-between">
+                <div className="gsap-res-card rounded-2xl border border-slate-100 bg-white p-6 shadow-xs flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
@@ -443,7 +473,7 @@ export default function ResultPage() {
                 </div>
 
                 {/* QQ Plot Card */}
-                <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-xs flex flex-col justify-between">
+                <div className="gsap-res-card rounded-2xl border border-slate-100 bg-white p-6 shadow-xs flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
@@ -493,7 +523,7 @@ export default function ResultPage() {
 
               {/* Top Significant SNPs Table - HANYA MUNCUL JIKA ADA HASIL ANALISIS */}
               {snpList.length > 0 ? (
-                <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-xs mb-8">
+                <div className="gsap-res-card rounded-2xl border border-slate-100 bg-white p-6 shadow-xs mb-8">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-5 border-b border-slate-100">
                     <div className="flex items-center gap-2">
                       <TableIcon className="w-5 h-5 text-cyan-600" />
@@ -590,7 +620,7 @@ export default function ResultPage() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-xs mb-8 text-center">
+                <div className="gsap-res-card rounded-2xl border border-slate-100 bg-white p-6 shadow-xs mb-8 text-center">
                   <TableIcon className="w-6 h-6 text-slate-300 mx-auto mb-2" />
                   <p className="text-xs font-semibold text-slate-700">Tabel Top SNP Belum Tersedia</p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
