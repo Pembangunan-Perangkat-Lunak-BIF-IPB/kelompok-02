@@ -18,35 +18,50 @@ logger = logging.getLogger(__name__)
 
 def execute_gwas_pipeline(
     result_id: str,
-    vcf_path: str,
+    genotype_path: str,
     csv_path: str,
     maf: float,
     call_rate: float,
     num_pcs: int,
     db: Session,
-    pheno_name: Optional[str] = None
+    pheno_name: Optional[str] = None,
+    call_rate_ind: float = 0.90,
+    genotype_type: str = "vcf"
 ):
-    job_dir = os.path.dirname(vcf_path)
+    job_dir = os.path.dirname(genotype_path)
     current_stage = "upload_validasi"
     stage_start_time = time.time()
 
     log_job(job_dir, f"=== MEMULAI PIPELINE GWAS [{result_id}] ===")
-    log_job(job_dir, f"Parameter: MAF={maf}, CallRate={call_rate}, PCs={num_pcs}, Fenotipe Target={pheno_name or 'Semua Kolom'}")
+    log_job(
+        job_dir,
+        f"Parameter: TipeGenotipe={genotype_type}, MAF={maf}, "
+        f"CallRate SNP={call_rate}, CallRate Ind={call_rate_ind}, "
+        f"PCs={num_pcs}, Fenotipe Target={pheno_name or 'Semua Kolom'}"
+    )
 
     try:
         # 1. Validasi & Matching
         current_stage = "upload_validasi"
         stage_start_time = time.time()
         update_stage_progress(result_id, "upload_validasi", AnalysisStatus.RUNNING, 0, "Matching sampel...", 5, db)
-        keep_samples, matched_csv = run_sample_matching(vcf_path, csv_path, job_dir)
+        keep_samples, matched_csv = run_sample_matching(genotype_path, csv_path, job_dir, genotype_type=genotype_type)
         update_stage_progress(result_id, "upload_validasi", AnalysisStatus.SUCCESS, int(time.time() - stage_start_time), "Validasi & Matching selesai", 20, db)
 
         # 2. QC Filtering PLINK
         current_stage = "qc"
         stage_start_time = time.time()
-        update_stage_progress(result_id, "qc", AnalysisStatus.RUNNING, 0, "Filtering PLINK QC...", 25, db)
-        qc_res = run_quality_control(vcf_path, keep_samples, job_dir, maf=maf, call_rate=call_rate)
-        update_stage_progress(result_id, "qc", AnalysisStatus.SUCCESS, int(time.time() - stage_start_time), "QC selesai", 40, db)
+        update_stage_progress(result_id, "qc", AnalysisStatus.RUNNING, 0, "Filtering PLINK QC & LD Pruning...", 25, db)
+        qc_res = run_quality_control(
+            genotype_path,
+            keep_samples,
+            job_dir,
+            maf=maf,
+            call_rate=call_rate,
+            call_rate_ind=call_rate_ind,
+            genotype_type=genotype_type
+        )
+        update_stage_progress(result_id, "qc", AnalysisStatus.SUCCESS, int(time.time() - stage_start_time), f"QC selesai (m_eff={qc_res.get('m_eff')})", 40, db)
 
         # 3. PCA PLINK
         current_stage = "pca"
@@ -79,7 +94,8 @@ def execute_gwas_pipeline(
         current_stage = "visualisasi"
         stage_start_time = time.time()
         update_stage_progress(result_id, "visualisasi", AnalysisStatus.RUNNING, 0, "Membuat plot...", 85, db)
-        run_parsing_and_rendering(glm_files, job_dir)
+        m_eff_val = qc_res.get("m_eff")
+        run_parsing_and_rendering(glm_files, job_dir, m_eff=m_eff_val)
         try:
             generate_pdf_report(
                 result_id=result_id,
@@ -87,8 +103,11 @@ def execute_gwas_pipeline(
                 params={
                     "maf": maf,
                     "call_rate": call_rate,
+                    "call_rate_ind": call_rate_ind,
                     "num_pcs": num_pcs,
-                    "pheno_name": pheno_name
+                    "pheno_name": pheno_name,
+                    "num_snps": qc_res.get("passed_snps"),
+                    "m_eff": m_eff_val
                 }
             )
         except Exception as pdf_err:
