@@ -10,7 +10,6 @@ Platform web terintegrasi untuk menjalankan alur **Genome-Wide Association Study
 JiwaskuProject/
 ├── backend/         # REST API FastAPI, migrasi Alembic (PostgreSQL), & engine PLINK 2.0
 ├── frontend/        # Antarmuka web React 19, Vite, Tailwind CSS v4, GSAP, & Three.js
-├── pipeline/        # Direktori utilitas/skrip pipeline
 ├── sample_data/     # Direktori dataset uji
 ├── tests/           # Direktori pengujian
 ├── .vscode/         # Pengaturan editor (python.terminal.useEnvFile: true)
